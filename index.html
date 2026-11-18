@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoPulse AI — Campus Plastic & Economic Impact Analyzer</title>
+  
+  <!-- Favicon / Meta -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
+  <meta name="description" content="An AI-powered behavioral economics initiative helping university students track single-use plastic expenses and transition to zero-waste campus habits in Uzbekistan.">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif']
+          },
+          colors: {
+            emerald: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              200: '#a7f3d0',
+              300: '#6ee7b7',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+              950: '#022c22'
+            },
+            slate: {
+              750: '#233047',
+              850: '#131e32',
+              900: '#0f172a',
+              950: '#080d1a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans antialiased selection:bg-emerald-500 selection:text-white relative min-h-screen flex flex-col">
+
+  <!-- Top Announcement Bar -->
+  <div class="bg-slate-900 text-slate-300 text-xs py-2 px-4 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center space-x-2">
+        <span data-i18n="topGrantBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+          WAYFINDER MINI-GRANT
+        </span>
+        <span data-i18n="topBannerText" class="font-medium text-[11px] sm:text-xs">Uzbekistan University Zero-Waste Pilot Initiative &bull; Tashkent Campus Benchmark</span>
+      </div>
+      <div class="flex items-center space-x-3 sm:space-x-4 text-[11px]">
+        <span class="flex items-center space-x-1.5 text-slate-400">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+          <span><span data-i18n="topExchangeLabel">Exchange Rate:</span> <strong>1 USD = 12,800 UZS</strong></span>
+        </span>
+        
+        <!-- Mobile Language Selector -->
+        <div class="flex sm:hidden items-center rounded-lg bg-slate-800 p-0.5 border border-slate-700">
+          <button type="button" class="lang-btn px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white" data-lang="en">EN</button>
+          <button type="button" class="lang-btn px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-300 hover:text-white" data-lang="uz">UZ</button>
+          <button type="button" class="lang-btn px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-300 hover:text-white" data-lang="ru">RU</button>
+        </div>
+
+        <button onclick="exportImpactReport()" class="hover:text-emerald-400 transition font-medium flex items-center space-x-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+          <span data-i18n="topPrintBtn">Print Policy Brief</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Primary Navigation -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+      <!-- Brand Logo -->
+      <a href="#" class="flex items-center space-x-3 group shrink-0">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition transform">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-display font-extrabold text-xl text-slate-900 tracking-tight">EcoPulse</span>
+            <span class="px-1.5 py-0.5 rounded text-[11px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800">AI</span>
+          </div>
+          <p data-i18n="navTagline" class="text-xs text-slate-500 font-medium truncate max-w-[210px] sm:max-w-none">Campus Plastic & Economic Impact</p>
+        </div>
+      </a>
+
+      <!-- Desktop Nav Links -->
+      <nav class="hidden lg:flex items-center space-x-6 text-sm font-semibold text-slate-600">
+        <a href="#calculator" data-i18n="navCalculator" class="hover:text-emerald-600 transition whitespace-nowrap">Impact Calculator</a>
+        <a href="#ai-simulator" class="hover:text-emerald-600 transition flex items-center space-x-1.5 whitespace-nowrap">
+          <span data-i18n="navAiDemo">AI Proof-of-Reuse</span>
+          <span data-i18n="navDemoBadge" class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Live Demo</span>
+        </a>
+        <a href="#campus-policy" data-i18n="navPolicy" class="hover:text-emerald-600 transition whitespace-nowrap">Macro Policy</a>
+        <a href="#behavioral-nudge" data-i18n="navNudge" class="hover:text-emerald-600 transition whitespace-nowrap">Nudge Economics</a>
+        <a href="#leaderboard" data-i18n="navLeaderboard" class="hover:text-emerald-600 transition whitespace-nowrap">Live Check-Ins</a>
+      </nav>
+
+      <!-- Language Switcher & Action Buttons -->
+      <div class="flex items-center space-x-2.5 sm:space-x-3 shrink-0">
+        <!-- Sleek Language Switcher EN | UZ | RU -->
+        <div class="inline-flex items-center rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs font-bold shadow-inner" role="group" aria-label="Language Selector">
+          <button type="button" class="lang-btn px-2.5 py-1 rounded-lg transition active:scale-95 bg-emerald-600 text-white shadow-sm" data-lang="en">EN</button>
+          <button type="button" class="lang-btn px-2.5 py-1 rounded-lg transition active:scale-95 text-slate-600 hover:text-slate-900 bg-transparent" data-lang="uz">UZ</button>
+          <button type="button" class="lang-btn px-2.5 py-1 rounded-lg transition active:scale-95 text-slate-600 hover:text-slate-900 bg-transparent" data-lang="ru">RU</button>
+        </div>
+
+        <a href="#calculator" data-i18n="navBtnCalc" class="hidden sm:inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition">
+          Calculate Loss
+        </a>
+        <a href="#ai-simulator" class="inline-flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/25 transition active:scale-95 shrink-0">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span data-i18n="navBtnAi">Try AI Scanner</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="relative pt-12 pb-16 md:pt-20 md:pb-24 overflow-hidden bg-grid-pattern">
+    <!-- Ambient Green Glows -->
+    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-400/15 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -top-10 right-10 w-80 h-80 bg-teal-300/20 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+      
+      <!-- Badges: Initiative Tag & Transparent Prototype Badge -->
+      <div class="flex flex-wrap items-center justify-center gap-2 mb-6">
+        <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span data-i18n="heroBadge">EcoPulse AI &bull; Sustainable Fintech for Higher Education</span>
+        </div>
+        <div class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-emerald-400 border border-slate-750 text-xs font-bold shadow-sm">
+          <span>⚡</span>
+          <span data-i18n="heroPrototypeBadge">MVP Prototype &bull; Pilot Phase 2026–2027</span>
+        </div>
+      </div>
+
+      <!-- Main Headline -->
+      <h1 class="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl text-slate-900 tracking-tight max-w-4xl mx-auto leading-tight">
+        <span data-i18n="heroTitlePrefix">Turning Plastic Waste into </span><span data-i18n="heroTitleAccent" class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">Economic Savings</span>
+      </h1>
+
+      <!-- Subtitle -->
+      <p data-i18n="heroSubtitle" class="mt-6 text-base sm:text-lg md:text-xl text-slate-600 max-w-3xl mx-auto font-normal leading-relaxed">
+        An AI-powered behavioral economics initiative helping university students track single-use plastic expenses and transition to zero-waste campus habits.
+      </p>
+
+      <!-- Action Buttons -->
+      <div class="mt-8 flex flex-wrap justify-center items-center gap-4">
+        <a href="#calculator" class="px-6 sm:px-7 py-3 sm:py-3.5 rounded-xl font-bold text-sm sm:text-base text-white bg-slate-900 hover:bg-slate-800 shadow-xl shadow-slate-900/15 transition flex items-center space-x-2.5">
+          <span data-i18n="heroBtnExplore">Explore Impact Calculator</span>
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </a>
+        <a href="#ai-simulator" class="px-6 sm:px-7 py-3 sm:py-3.5 rounded-xl font-bold text-sm sm:text-base text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 shadow-sm transition flex items-center space-x-2">
+          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span data-i18n="heroBtnAi">Test Proof-of-Reuse AI</span>
+        </a>
+      </div>
+
+      <!-- Zero-Start Real Impact Tracker (No Fake Numbers) -->
+      <div class="mt-14 max-w-5xl mx-auto">
+        <div class="bg-white/85 backdrop-blur-md rounded-2xl border border-slate-200/80 p-6 shadow-xl shadow-slate-200/50">
+          <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 text-xs font-semibold text-slate-500">
+            <span class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+              <span data-i18n="tickerHeader" class="text-slate-800 font-bold uppercase tracking-wider">Live Pilot Tracker &bull; Starting from 0</span>
+            </span>
+            <span data-i18n="tickerSubheader" class="text-slate-400">Real visitor interactions &bull; No simulated numbers</span>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-left">
+            <!-- Metric 1 -->
+            <div class="space-y-1">
+              <div data-i18n="tickerMetric1Label" class="text-xs uppercase font-bold text-slate-500 tracking-wider">Bottles Prevented</div>
+              <div id="ticker-bottles" class="font-display font-extrabold text-2xl sm:text-3xl text-emerald-600 tracking-tight">0</div>
+              <div data-i18n="tickerMetric1Sub" class="text-[11px] text-slate-400">Real single-use PET averted</div>
+            </div>
+
+            <!-- Metric 2 -->
+            <div class="space-y-1">
+              <div data-i18n="tickerMetric2Label" class="text-xs uppercase font-bold text-slate-500 tracking-wider">Student Money Saved</div>
+              <div id="ticker-money" class="font-display font-extrabold text-2xl sm:text-3xl text-slate-900 tracking-tight">0 UZS ($0.00)</div>
+              <div id="ticker-money-sub" data-i18n="tickerMetric2Sub" class="text-[11px] text-emerald-600 font-medium">Cumulative real savings</div>
+            </div>
+
+            <!-- Metric 3 -->
+            <div class="space-y-1">
+              <div data-i18n="tickerMetric3Label" class="text-xs uppercase font-bold text-slate-500 tracking-wider">Verified Check-ins</div>
+              <div id="ticker-participants" class="font-display font-extrabold text-2xl sm:text-3xl text-slate-900 tracking-tight">0</div>
+              <div data-i18n="tickerMetric3Sub" class="text-[11px] text-slate-400">Reusable bottles & pledges logged</div>
+            </div>
+
+            <!-- Metric 4 -->
+            <div class="space-y-1">
+              <div data-i18n="tickerMetric4Label" class="text-xs uppercase font-bold text-slate-500 tracking-wider">CO₂ Footprint Avoided</div>
+              <div id="ticker-co2" class="font-display font-extrabold text-2xl sm:text-3xl text-teal-600 tracking-tight">0.0 kg</div>
+              <div data-i18n="tickerMetric4Sub" class="text-[11px] text-slate-400">Life-cycle carbon prevented</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Feature: Plastic Cost & Impact Calculator -->
+  <section id="calculator" class="py-16 bg-white border-t border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Section Header -->
+      <div class="text-center max-w-3xl mx-auto mb-12">
+        <span data-i18n="calcSectionBadge" class="text-emerald-600 font-bold text-xs uppercase tracking-widest">Main Feature &bull; Dynamic Economics Model</span>
+        <h2 data-i18n="calcTitle" class="font-display font-extrabold text-3xl sm:text-4xl text-slate-900 tracking-tight mt-1">
+          Plastic Cost & Environmental Impact Calculator
+        </h2>
+        <p data-i18n="calcSubtitle" class="mt-3 text-slate-600 text-sm sm:text-base">
+          Adjust your daily purchase habits to uncover the hidden financial toll and plastic waste generation over your university timeline.
+        </p>
+      </div>
+
+      <!-- Quick Personas -->
+      <div class="flex flex-wrap items-center justify-center gap-2 mb-8 text-xs font-semibold">
+        <span data-i18n="calcPresetsLabel" class="text-slate-400 mr-2">Quick Presets:</span>
+        <button data-i18n="presetAvg" class="preset-btn px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition" data-preset="average">
+          Average Student (2 Water / 1 Coffee)
+        </button>
+        <button data-i18n="presetCoffee" class="preset-btn px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition" data-preset="coffee-lover">
+          ☕ Coffee Lover (1 Water / 3 Coffee)
+        </button>
+        <button data-i18n="presetExam" class="preset-btn px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition" data-preset="study-marathon">
+          📚 Exam Week (4 Water / 2 Coffee)
+        </button>
+        <button data-i18n="presetEco" class="preset-btn px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition" data-preset="eco-novice">
+          🌱 Eco Novice (1 Water / 0 Coffee)
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Left: Input Controls Card (5 cols) -->
+        <div class="lg:col-span-5 bg-slate-50 p-6 sm:p-7 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+            <h3 data-i18n="calcBoxTitle" class="font-display font-bold text-lg text-slate-900">Your Daily Consumption</h3>
+            <span data-i18n="calcBoxSub" class="text-xs text-slate-500 font-medium">Configurable Inputs</span>
+          </div>
+
+          <!-- Input 1: Water Bottles Slider -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-sm font-semibold text-slate-700">
+              <span class="flex items-center space-x-2">
+                <span class="text-lg">💧</span>
+                <span data-i18n="calcWaterLabel">Single-Use Water Bottles / Day</span>
+              </span>
+              <span class="bg-white border border-slate-200 px-3 py-0.5 rounded-lg font-bold text-emerald-600 text-base shadow-sm">
+                <span id="calc-water-val">2</span>
+              </span>
+            </div>
+            <input id="calc-water" type="range" min="0" max="10" step="1" value="2" class="w-full">
+            <div class="flex justify-between text-[11px] text-slate-400 font-medium">
+              <span data-i18n="calcWaterZero">0 (Zero packaging)</span>
+              <span data-i18n="calcWaterMid">5 bottles</span>
+              <span data-i18n="calcWaterMax">10 bottles</span>
+            </div>
+          </div>
+
+          <!-- Input 2: Coffee Cups Slider -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-sm font-semibold text-slate-700">
+              <span class="flex items-center space-x-2">
+                <span class="text-lg">☕</span>
+                <span data-i18n="calcCoffeeLabel">Disposable Coffee / Tea Cups</span>
+              </span>
+              <span class="bg-white border border-slate-200 px-3 py-0.5 rounded-lg font-bold text-emerald-600 text-base shadow-sm">
+                <span id="calc-coffee-val">1</span>
+              </span>
+            </div>
+            <input id="calc-coffee" type="range" min="0" max="10" step="1" value="1" class="w-full">
+            <div class="flex justify-between text-[11px] text-slate-400 font-medium">
+              <span data-i18n="calcCoffeeZero">0 cups</span>
+              <span data-i18n="calcCoffeeMid">5 cups</span>
+              <span data-i18n="calcCoffeeMax">10 cups</span>
+            </div>
+          </div>
+
+          <!-- Price Configurations -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-200">
+            <!-- Water Price -->
+            <div class="space-y-1.5">
+              <label data-i18n="calcWaterPriceLabel" class="block text-xs font-semibold text-slate-600">Price per Water Bottle</label>
+              <div class="relative rounded-lg shadow-sm">
+                <input id="calc-water-price" type="number" step="500" value="4000" class="w-full rounded-lg border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 focus:border-emerald-500 focus:ring-emerald-500 border">
+                <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-slate-400 pointer-events-none">UZS</span>
+              </div>
+              <div id="water-usd-badge" class="text-[11px] text-emerald-700 font-medium">≈ $0.31</div>
+            </div>
+
+            <!-- Coffee Price -->
+            <div class="space-y-1.5">
+              <label data-i18n="calcCoffeePriceLabel" class="block text-xs font-semibold text-slate-600">Price per Coffee Cup</label>
+              <div class="relative rounded-lg shadow-sm">
+                <input id="calc-coffee-price" type="number" step="1000" value="15000" class="w-full rounded-lg border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 focus:border-emerald-500 focus:ring-emerald-500 border">
+                <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-slate-400 pointer-events-none">UZS</span>
+              </div>
+              <div id="coffee-usd-badge" class="text-[11px] text-emerald-700 font-medium">≈ $1.17</div>
+            </div>
+          </div>
+
+          <!-- Timeframe Selector -->
+          <div class="space-y-2 pt-2 border-t border-slate-200">
+            <label data-i18n="calcHorizonLabel" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider">Select Evaluation Horizon</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button class="timeframe-btn px-2 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition text-center" data-timeframe="monthly">
+                <span data-i18n="timeframeMonth">Monthly</span><br><span data-i18n="timeframeMonthSub" class="text-[10px] font-normal opacity-80">(30 days)</span>
+              </button>
+              <button class="timeframe-btn px-2 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition text-center" data-timeframe="semester">
+                <span data-i18n="timeframeSemester">Semester</span><br><span data-i18n="timeframeSemesterSub" class="text-[10px] font-normal opacity-80">(4 months)</span>
+              </button>
+              <button class="timeframe-btn px-2 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-md transition text-center" data-timeframe="academic-year">
+                <span data-i18n="timeframeYear">Academic Year</span><br><span data-i18n="timeframeYearSub" class="text-[10px] font-normal opacity-90">(9 months)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Reference Note -->
+          <div data-i18n-html="calcTip" class="p-3 bg-emerald-50 rounded-xl border border-emerald-200/60 text-xs text-emerald-900 leading-relaxed">
+            💡 <strong>Economic Reality:</strong> Students often view 4,000 UZS water bottles as negligible micro-expenses. Over an academic year, this aggregates into significant capital loss that could cover textbooks or courses.
+          </div>
+        </div>
+
+        <!-- Right: Real-Time Output Cards & Interactive Chart (7 cols) -->
+        <div class="lg:col-span-7 space-y-6">
+
+          <!-- 3 Real-time Output Cards Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            
+            <!-- Output Card 1: Financial Loss -->
+            <div class="bg-gradient-to-b from-red-50 to-white p-5 rounded-2xl border border-red-200 shadow-sm relative overflow-hidden">
+              <div class="flex items-center justify-between text-xs font-bold text-red-600 mb-2">
+                <span data-i18n="outLossTitle">TOTAL FINANCIAL LOSS</span>
+                <span class="text-base">💸</span>
+              </div>
+              <div id="out-loss-uzs" class="font-display font-extrabold text-2xl text-slate-900 tracking-tight">
+                2,070,000 UZS
+              </div>
+              <div id="out-loss-usd" class="text-xs font-semibold text-red-600 mt-1">
+                ≈ $161.72 USD
+              </div>
+              <div class="text-[11px] text-slate-400 mt-3 pt-2 border-t border-red-100">
+                <span data-i18n="outOverLabel">Over</span> <span id="out-timeframe-badge" class="font-bold text-slate-600">Academic Year (9 mo)</span>
+              </div>
+            </div>
+
+            <!-- Output Card 2: Plastic Footprint -->
+            <div class="bg-gradient-to-b from-amber-50 to-white p-5 rounded-2xl border border-amber-200 shadow-sm relative overflow-hidden">
+              <div class="flex items-center justify-between text-xs font-bold text-amber-700 mb-2">
+                <span data-i18n="outPlasticTitle">PLASTIC FOOTPRINT</span>
+                <span class="text-base">🗑️</span>
+              </div>
+              <div id="out-plastic-items" class="font-display font-extrabold text-2xl text-slate-900 tracking-tight">
+                810 items
+              </div>
+              <div class="text-xs font-semibold text-amber-800 mt-1 flex items-center space-x-1">
+                <span data-i18n="outWeightPrefix">Weight:</span> <strong id="out-plastic-weight">17.3 kg</strong>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-3 pt-2 border-t border-amber-100">
+                <span data-i18n="outCo2Prefix">CO₂ impact:</span> <span id="out-co2" class="font-bold text-slate-600">103.8 kg CO₂e</span>
+              </div>
+            </div>
+
+            <!-- Output Card 3: Reusable Thermos ROI -->
+            <div class="bg-gradient-to-b from-emerald-50 to-white p-5 rounded-2xl border border-emerald-200 shadow-sm relative overflow-hidden ring-2 ring-emerald-500/20">
+              <div class="flex items-center justify-between text-xs font-bold text-emerald-700 mb-2">
+                <span data-i18n="outRoiTitle">REUSABLE THERMOS ROI</span>
+                <span class="text-base">⚡</span>
+              </div>
+              <div id="out-roi-days" class="font-display font-bold text-lg text-emerald-700 leading-snug">
+                Pays for itself in <strong>7 days</strong>!
+              </div>
+              <div class="text-xs font-semibold text-emerald-800 mt-1">
+                <span data-i18n="outNetProfitLabel">Net Profit:</span> <span id="out-net-savings" class="font-bold">+1,920,000 UZS</span>
+              </div>
+              <div data-i18n="outThermosBasis" class="text-[11px] text-slate-400 mt-3 pt-2 border-t border-emerald-100">
+                Based on $11.70 (150k UZS) thermos
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Real Action Card: Commit to Refill / Log My Savings -->
+          <div class="p-5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-white border border-emerald-300 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="space-y-1 text-left">
+              <div class="flex items-center space-x-2">
+                <span class="text-lg">🌿</span>
+                <h4 data-i18n="calcPledgeTitle" class="font-display font-bold text-slate-900 text-sm sm:text-base">Commit to Refill / Log My Savings</h4>
+              </div>
+              <p data-i18n="calcPledgeDesc" class="text-xs text-slate-600 max-w-xl leading-relaxed">
+                Pledge to switch to a reusable bottle on campus today and contribute your daily impact to our live pilot metrics.
+              </p>
+            </div>
+            <button id="calc-pledge-btn" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/25 transition active:scale-95 whitespace-nowrap shrink-0 flex items-center space-x-2">
+              <span>⚡</span>
+              <span data-i18n="calcPledgeBtn">Commit to Refill (+1 Bottle & 4,000 UZS Saved)</span>
+            </button>
+          </div>
+
+          <!-- Chart Card: Status Quo vs Zero-Waste Cumulative Spending -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+              <div>
+                <h4 data-i18n="chartTitle" class="font-display font-bold text-base text-slate-900">
+                  9-Month Cumulative Trajectory: Single-Use vs. Zero-Waste
+                </h4>
+                <p data-i18n="chartSubtitle" class="text-xs text-slate-500">Visualizing the break-even curve and compounding financial drain</p>
+              </div>
+
+              <!-- View Toggles -->
+              <div class="inline-flex rounded-lg bg-slate-100 p-1 border border-slate-200 text-xs font-semibold">
+                <button id="chart-view-cost" data-i18n="chartBtnCost" class="px-3 py-1 rounded-md bg-slate-900 text-white transition">
+                  Cumulative Cost (UZS)
+                </button>
+                <button id="chart-view-plastic" data-i18n="chartBtnPlastic" class="px-3 py-1 rounded-md bg-white text-slate-700 hover:text-slate-900 transition">
+                  Plastic Items Generated
+                </button>
+              </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div class="relative w-full h-72">
+              <canvas id="impactChart"></canvas>
+            </div>
+
+            <!-- Key Insight Callout -->
+            <div class="mt-4 pt-4 border-t border-slate-100 flex items-start space-x-3 text-xs text-slate-600">
+              <span data-i18n="chartInsightBadge" class="p-1 rounded-md bg-emerald-100 text-emerald-800 font-bold shrink-0">Insight</span>
+              <span data-i18n-html="chartInsightText">
+                By purchasing a 150,000 UZS reusable bottle in Month 1 and utilizing campus water refill stations, the student completely decouples hydration from daily expenditure, preserving up to <strong>90% of beverage budgets</strong>.
+              </span>
+            </div>
+          </div>
+
+          <!-- Transparent Mathematical Baseline Assumptions Footnote -->
+          <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500 space-y-1">
+            <div class="font-bold text-slate-700 flex items-center space-x-1.5">
+              <span>📐</span>
+              <span data-i18n="calcAssumptionsTitle">Transparent Economic Model Assumptions</span>
+            </div>
+            <p data-i18n="calcAssumptionsText" class="text-[11px] text-slate-500 leading-relaxed">
+              Baseline Assumptions: 4,000 UZS per 0.5L PET bottle (~24g PET) • 15,000 UZS per disposable cup with plastic lid (~16g composite waste) • Standard reusable thermos: 150,000 UZS (~$11.72) • Exchange rate: 1 USD = 12,800 UZS • Academic Year: 270 days (9 months).
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature 2: AI Verification Simulator ("Proof-of-Reuse" Demo) -->
+  <section id="ai-simulator" class="py-16 bg-slate-900 text-white relative overflow-hidden">
+    <!-- Ambient high-tech background lines -->
+    <div class="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
+    <div class="absolute -right-20 -bottom-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      
+      <!-- Section Header -->
+      <div class="text-center max-w-3xl mx-auto mb-12">
+        <span data-i18n="aiBadge" class="text-emerald-400 font-bold text-xs uppercase tracking-widest">Autonomous Computer Vision &bull; Edge AI Demo</span>
+        <h2 data-i18n="aiTitle" class="font-display font-extrabold text-3xl sm:text-4xl text-white tracking-tight mt-1">
+          AI Proof-of-Reuse Verification Simulator
+        </h2>
+        <p data-i18n-html="aiSubtitle" class="mt-3 text-slate-400 text-sm sm:text-base">
+          Test the neural computer vision pipeline used by our mobile web app and Telegram bot (<span class="text-emerald-400">@EcoPulseUzBot</span>) to detect reusable containers, prevent fraud, and credit student rewards.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Left: Interactive Scanner / Viewfinder (6 cols) -->
+        <div class="lg:col-span-6 bg-slate-850 p-6 rounded-2xl border border-slate-750 shadow-2xl space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div class="flex items-center space-x-2">
+              <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+              <div class="w-3 h-3 rounded-full bg-amber-500/80"></div>
+              <div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+              <span data-i18n="aiViewfinderHeader" class="text-xs font-mono text-slate-400 pl-2">EcoVision Neural Viewfinder</span>
+            </div>
+            <div id="ai-status-badge" class="text-xs font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-full flex items-center">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-ping"></span><span id="ai-status-text">Ready for scan</span>
+            </div>
+          </div>
+
+          <!-- Camera Viewfinder Box with Laser Scan Beam -->
+          <div id="ai-dropzone" class="relative w-full h-80 rounded-xl bg-slate-950 border-2 border-dashed border-slate-700 flex flex-col items-center justify-center overflow-hidden cursor-pointer group hover:border-emerald-500 transition">
+            
+            <!-- Laser Scanning Beam (Animated via CSS) -->
+            <div id="ai-scanner-line" class="laser-scanner-line hidden"></div>
+
+            <!-- Viewfinder Corner Accents -->
+            <div class="absolute top-3 left-3 w-5 h-5 border-t-2 border-l-2 border-emerald-500"></div>
+            <div class="absolute top-3 right-3 w-5 h-5 border-t-2 border-r-2 border-emerald-500"></div>
+            <div class="absolute bottom-3 left-3 w-5 h-5 border-b-2 border-l-2 border-emerald-500"></div>
+            <div class="absolute bottom-3 right-3 w-5 h-5 border-b-2 border-r-2 border-emerald-500"></div>
+
+            <!-- Image / SVG Render Area -->
+            <div id="ai-preview-container" class="w-full h-full flex items-center justify-center p-4">
+              <div id="ai-preview-svg" class="w-full flex items-center justify-center"></div>
+              <img id="ai-preview-img" class="max-h-full max-w-full object-contain rounded-lg hidden shadow-lg" alt="Uploaded Preview">
+            </div>
+
+            <!-- Hover Upload Tooltip -->
+            <div data-i18n="aiDropHint" class="absolute bottom-3 inset-x-0 text-center opacity-0 group-hover:opacity-100 transition text-[11px] text-slate-400 pointer-events-none px-4">
+              Click anywhere to upload your own photo or drop an image file
+            </div>
+          </div>
+
+          <!-- Hidden File Input for Custom Upload -->
+          <input type="file" id="ai-file-input" accept="image/*" class="hidden">
+
+          <!-- 3 Quick Preset Demo Buttons -->
+          <div>
+            <div class="text-xs font-semibold text-slate-400 mb-2.5 flex items-center justify-between">
+              <span data-i18n="aiPresetsLabel">Quick Test Presets (Instant Simulation):</span>
+              <button onclick="document.getElementById('ai-file-input').click()" data-i18n="aiUploadBtn" class="text-emerald-400 hover:text-emerald-300 font-bold transition">
+                + Upload Custom Photo
+              </button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <button class="ai-preset-btn p-3 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-left transition text-xs space-y-1 ring-2 ring-emerald-500 bg-emerald-950/20" data-preset="thermos">
+                <div class="font-bold text-white flex items-center space-x-1">
+                  <span>🟢</span>
+                  <span data-i18n="aiPresetThermos">Test with Reusable Thermos Photo</span>
+                </div>
+                <div data-i18n="aiPresetThermosSub" class="text-[11px] text-slate-400">Stainless vacuum flask demo</div>
+              </button>
+
+              <button class="ai-preset-btn p-3 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-left transition text-xs space-y-1" data-preset="glass">
+                <div class="font-bold text-white flex items-center space-x-1">
+                  <span>🔵</span>
+                  <span data-i18n="aiPresetGlass">Test with Glass Water Bottle</span>
+                </div>
+                <div data-i18n="aiPresetGlassSub" class="text-[11px] text-slate-400">Borosilicate + sleeve demo</div>
+              </button>
+
+              <button class="ai-preset-btn p-3 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-left transition text-xs space-y-1" data-preset="plastic">
+                <div class="font-bold text-white flex items-center space-x-1">
+                  <span>🔴</span>
+                  <span data-i18n="aiPresetPlastic">Test with Single-Use Plastic Bottle</span>
+                </div>
+                <div data-i18n="aiPresetPlasticSub" class="text-[11px] text-slate-400">0.5L PET bottle demo</div>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right: AI Verdict & Confidence Inspection Card (6 cols) -->
+        <div class="lg:col-span-6 space-y-6">
+          
+          <div class="bg-white text-slate-900 p-6 sm:p-7 rounded-2xl shadow-xl border border-slate-200">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+              <h3 data-i18n="aiVerdictHeader" class="font-display font-bold text-lg text-slate-900">AI Inference Verdict</h3>
+              <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">Model: YOLOv8-Nano</span>
+            </div>
+
+            <!-- Dynamic Result Card -->
+            <div id="ai-result-card" class="transition-all duration-300">
+              <!-- Rendered via app.js -->
+            </div>
+          </div>
+
+          <!-- How It Works / Telegram Companion -->
+          <div class="bg-gradient-to-br from-slate-850 to-slate-900 p-6 rounded-2xl border border-slate-800 shadow-lg text-slate-300 text-xs space-y-3">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center font-bold text-base">
+                ✈
+              </div>
+              <div>
+                <h4 class="font-bold text-white text-sm">Autonomous Campus Integration</h4>
+                <p class="text-slate-400 text-[11px]">Synced with lightweight mobile web app and Telegram @EcoPulseUzBot</p>
+              </div>
+            </div>
+
+            <p class="text-slate-300 leading-relaxed">
+              Every verified refill directly contributes to the university's environmental record. When connected to campus hydration stations, each photo verifies material signatures, logs timestamps, and increments student EcoPoints.
+            </p>
+
+            <!-- Raw JSON Telemetry Accordion -->
+            <div class="pt-2 border-t border-slate-800">
+              <button id="ai-json-toggle" class="text-emerald-400 hover:text-emerald-300 font-mono text-[11px] font-bold transition">
+                View Raw AI Vision JSON Telemetry ↓
+              </button>
+              <div id="ai-json-container" class="mt-3 p-3.5 bg-slate-950 rounded-xl font-mono text-[11px] text-emerald-400 border border-slate-800 overflow-x-auto max-h-48 hidden">
+                <pre id="ai-json-output">// JSON Telemetry will display here</pre>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature 3: Campus Policy & Water Refill Station Proposal (Economics Brief) -->
+  <section id="campus-policy" class="py-16 bg-white border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Section Header -->
+      <div class="text-center max-w-3xl mx-auto mb-12">
+        <span data-i18n="policyBadge" class="text-emerald-600 font-bold text-xs uppercase tracking-widest">Projected Impact Model (Per 1,000–10,000 Students)</span>
+        <h2 data-i18n="policyTitle" class="font-display font-extrabold text-3xl sm:text-4xl text-slate-900 tracking-tight mt-1">
+          Campus Policy & Water Refill Station Proposal
+        </h2>
+        <p data-i18n="policySubtitle" class="mt-3 text-slate-600 text-sm sm:text-base">
+          A macro-economic analysis evaluating the return on investment of installing smart, hygienic touchless water refill stations across Uzbek university faculties.
+        </p>
+      </div>
+
+      <!-- Macro Campus Population Slider -->
+      <div class="max-w-xl mx-auto bg-slate-50 p-6 rounded-2xl border border-slate-200 shadow-sm mb-12 space-y-3">
+        <div class="flex items-center justify-between text-sm font-semibold text-slate-700">
+          <span data-i18n="policyPopulationLabel">Benchmark Campus Student Population</span>
+          <span id="policy-students-val" class="font-display font-bold text-emerald-600 text-base">2,000 students</span>
+        </div>
+        <input id="policy-students" type="range" min="500" max="10000" step="250" value="2000" class="w-full">
+        <div class="flex justify-between text-[11px] text-slate-400">
+          <span data-i18n="policyPopSmall">500 (Small College)</span>
+          <span data-i18n="policyPopMid">2,000 (Standard Campus)</span>
+          <span data-i18n="policyPopLarge">10,000 (Major University)</span>
+        </div>
+      </div>
+
+      <!-- Macro Impact Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        
+        <!-- Macro 1: Current Annual Waste -->
+        <div class="p-6 rounded-2xl bg-gradient-to-b from-slate-50 to-white border border-slate-200 space-y-2">
+          <div data-i18n="policyCard1Title" class="text-xs uppercase font-bold text-red-600 tracking-wider">Annual Campus Plastic Waste</div>
+          <div id="macro-plastic-bottles" class="font-display font-extrabold text-3xl text-slate-900">
+            1.24 Million items
+          </div>
+          <div id="macro-plastic-kg" class="text-xs font-semibold text-slate-600">
+            ≈ 22.7 metric tons of solid waste
+          </div>
+          <p data-i18n="policyCard1Desc" class="text-xs text-slate-500 pt-3 border-t border-slate-100">
+            Discarded single-use PET bottles & polyethylene coffee cups entering municipal Tashkent landfills annually.
+          </p>
+        </div>
+
+        <!-- Macro 2: Student Capital Drain -->
+        <div class="p-6 rounded-2xl bg-gradient-to-b from-slate-50 to-white border border-slate-200 space-y-2">
+          <div data-i18n="policyCard2Title" class="text-xs uppercase font-bold text-amber-700 tracking-wider">Annual Student Body Financial Outflow</div>
+          <div id="macro-student-loss-uzs" class="font-display font-extrabold text-3xl text-slate-900">
+            4.86 Billion UZS
+          </div>
+          <div id="macro-student-loss-usd" class="text-xs font-semibold text-emerald-600 font-bold">
+            ≈ $379,688 USD
+          </div>
+          <p data-i18n="policyCard2Desc" class="text-xs text-slate-500 pt-3 border-t border-slate-100">
+            Student funds dissipated on single-use packaging that could otherwise subsidize educational materials, technology, and housing.
+          </p>
+        </div>
+
+        <!-- Macro 3: Refill Station Solution -->
+        <div class="p-6 rounded-2xl bg-gradient-to-b from-emerald-50 to-white border border-emerald-200 space-y-2 ring-1 ring-emerald-500/30">
+          <div data-i18n="policyCard3Title" class="text-xs uppercase font-bold text-emerald-700 tracking-wider">Recommended Infrastructure CapEx</div>
+          <div id="macro-stations-needed" class="font-display font-extrabold text-3xl text-emerald-800">
+            7 Smart Stations
+          </div>
+          <div id="macro-capex" class="text-xs font-semibold text-slate-700">
+            84M UZS (~$6,560 USD) CapEx
+          </div>
+          <p class="text-xs text-emerald-800 font-medium pt-3 border-t border-emerald-100">
+            <span data-i18n="policyCard3DescPrefix">Station Payback:</span> <strong id="macro-payback">~5 days</strong> <span data-i18n="policyCard3DescSuffix">of community student savings!</span>
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Behavioral Economics Nudge Matrix -->
+      <div id="behavioral-nudge" class="pt-8">
+        <div class="max-w-3xl mb-8">
+          <span data-i18n="nudgeSectionBadge" class="text-xs uppercase font-bold text-emerald-600 tracking-wider">Policy Architecture</span>
+          <h3 data-i18n="nudgeSectionTitle" class="font-display font-bold text-2xl text-slate-900 mt-1">
+            The Behavioral Economics Model: "Nudge Theory" on Campus
+          </h3>
+          <p data-i18n="nudgeSectionDesc" class="text-slate-600 text-sm mt-2">
+            Relying solely on moral appeals yields minimal habit change. EcoPulse AI applies Richard Thaler’s Nobel-prize winning choice architecture to make zero-waste the easiest, default path:
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          <!-- Nudge 1: Choice Architecture -->
+          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-lg">
+              1
+            </div>
+            <h4 data-i18n="nudge1Title" class="font-bold text-slate-900 text-base">Default Architecture</h4>
+            <p data-i18n-html="nudge1Desc" class="text-xs text-slate-600 leading-relaxed">
+              Position high-flow, chilled UV water stations directly outside lecture halls and library entrances rather than tucked in basements. Making the sustainable choice require <strong>zero friction</strong> increases adoption by 340%.
+            </p>
+          </div>
+
+          <!-- Nudge 2: Loss Aversion Framing -->
+          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg">
+              2
+            </div>
+            <h4 data-i18n="nudge2Title" class="font-bold text-slate-900 text-base">Loss Aversion Invoicing</h4>
+            <p data-i18n-html="nudge2Desc" class="text-xs text-slate-600 leading-relaxed">
+              Require campus cafeterias to itemize receipts: <em>"Coffee: 11,000 UZS + Single-Use Cup Penalty: 4,000 UZS"</em>. Behavioral studies prove people react twice as strongly to avoiding a fee than gaining an equivalent discount.
+            </p>
+          </div>
+
+          <!-- Nudge 3: Social Proof & Leaderboards -->
+          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center font-bold text-lg">
+              3
+            </div>
+            <h4 data-i18n="nudge3Title" class="font-bold text-slate-900 text-base">Social Proof Dynamic</h4>
+            <p data-i18n-html="nudge3Desc" class="text-xs text-slate-600 leading-relaxed">
+              Install live digital monitors showing: <em>"84% of Economics faculty students used a reusable thermos this week"</em>. Humans instinctively conform to visible peer norms, triggering positive contagion.
+            </p>
+          </div>
+
+          <!-- Nudge 4: Micro-Incentives -->
+          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-bold text-lg">
+              4
+            </div>
+            <h4 data-i18n="nudge4Title" class="font-bold text-slate-900 text-base">Instant Micro-Rewards</h4>
+            <p data-i18n-html="nudge4Desc" class="text-xs text-slate-600 leading-relaxed">
+              Each AI check-in awards EcoPoints convertible to campus bookstore discounts, free dormitory laundry tokens, or university library print quotas. Immediate positive feedback loops reinforce lasting neural habits.
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Feature 4: Recent Verified Campus Check-Ins (Real User Activity Feed) -->
+  <section id="leaderboard" class="py-16 bg-slate-50 border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-2xl mx-auto mb-8">
+        <span data-i18n="feedBadge" class="text-emerald-600 font-bold text-xs uppercase tracking-widest">Real Student Activity Feed</span>
+        <h2 data-i18n="feedTitle" class="font-display font-extrabold text-3xl text-slate-900 tracking-tight mt-1">
+          Recent Verified Campus Check-Ins
+        </h2>
+        <p data-i18n="feedSubtitle" class="text-xs sm:text-sm text-slate-500 mt-2">
+          Live log of students verifying reusable containers and pledging zero-waste habits across campus.
+        </p>
+      </div>
+
+      <div class="max-w-4xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        
+        <!-- Dynamic Check-In Feed (Empty State or Real User Entries) -->
+        <div id="checkins-feed-container" class="divide-y divide-slate-100">
+          <!-- Populated dynamically via app.js -->
+        </div>
+
+        <!-- Utility Bar: Live Count & Reset Pilot Data to 0 -->
+        <div class="bg-slate-50 p-4 px-6 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 border-t border-slate-100">
+          <div class="flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+            <span>Local Pilot Records: <strong id="feed-count-badge" class="text-slate-800">0 check-ins</strong></span>
+          </div>
+          <button id="btn-reset-pilot" class="text-slate-400 hover:text-red-500 transition font-medium text-[11px] flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            <span data-i18n="feedResetBtn">Reset Pilot Data to 0</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="mt-auto bg-slate-950 text-slate-400 text-xs py-12 border-t border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-8 pb-10 border-b border-slate-800">
+        
+        <!-- Brand Info -->
+        <div class="md:col-span-5 space-y-3">
+          <div class="flex items-center space-x-2">
+            <div class="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-950 font-black text-sm">
+              🌱
+            </div>
+            <span class="font-display font-bold text-lg text-white">EcoPulse AI</span>
+          </div>
+          <p data-i18n-html="footerAbout" class="text-slate-400 text-xs leading-relaxed max-w-sm">
+            Developed as a <strong>Wayfinder Society Student Mini-Grant Initiative</strong> | Economics &times; AI &times; Sustainability. Empowering students across Uzbekistan to combat plastic pollution with data-driven behavioral economics.
+          </p>
+          <div data-i18n="footerStrategy" class="text-[11px] text-slate-500">
+            Aligned with Uzbekistan's National Strategy on Municipal Solid Waste Management (2019–2028).
+          </div>
+        </div>
+
+        <!-- Quick Navigation -->
+        <div class="md:col-span-3 space-y-2">
+          <h5 data-i18n="footerQuickLinks" class="font-bold text-white uppercase tracking-wider text-[11px]">Core Features</h5>
+          <ul class="space-y-1.5 text-xs">
+            <li><a href="#calculator" data-i18n="navCalculator" class="hover:text-emerald-400 transition">Impact & Cost Calculator</a></li>
+            <li><a href="#ai-simulator" data-i18n="navAiDemo" class="hover:text-emerald-400 transition">AI Proof-of-Reuse Demo</a></li>
+            <li><a href="#campus-policy" data-i18n="navPolicy" class="hover:text-emerald-400 transition">Water Refill Station CapEx</a></li>
+            <li><a href="#behavioral-nudge" data-i18n="navNudge" class="hover:text-emerald-400 transition">Nudge Theory Framework</a></li>
+            <li><a href="#leaderboard" data-i18n="navLeaderboard" class="hover:text-emerald-400 transition">Recent Campus Check-Ins</a></li>
+          </ul>
+        </div>
+
+        <!-- Policy & Grant Context -->
+        <div class="md:col-span-4 space-y-2">
+          <h5 data-i18n="footerGrantTitle" class="font-bold text-white uppercase tracking-wider text-[11px]">Grant & University Acknowledgments</h5>
+          <p data-i18n="footerGrantText" class="text-[11px] text-slate-400 leading-relaxed">
+            Special thanks to the Wayfinder Society for supporting student-led environmental economics research in Central Asia. All economic metrics calculated based on Central Bank of Uzbekistan exchange benchmarks (1 USD = 12,800 UZS).
+          </p>
+          <div class="pt-2">
+            <button onclick="exportImpactReport()" class="px-4 py-2 rounded-lg bg-slate-850 hover:bg-slate-800 text-slate-200 border border-slate-700 font-semibold transition text-xs flex items-center space-x-2">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span data-i18n="footerDownloadBtn">Download Executive Policy Brief</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-3">
+        <div data-i18n="footerCopyright">
+          &copy; 2024–2025 EcoPulse AI Initiative. Open-source educational prototype.
+        </div>
+        <div class="flex items-center space-x-4">
+          <span data-i18n="footerLocation">Tashkent, Uzbekistan • Wayfinder Society Student Mini-Grant</span>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- Scripts: Multi-language Dictionary then Application Logic -->
+  <script src="translations.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

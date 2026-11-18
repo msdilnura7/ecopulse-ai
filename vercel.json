@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "ecopulse-ai",
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
