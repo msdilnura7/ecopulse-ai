@@ -192,7 +192,7 @@
             <span data-i18n="tickerSubheader" class="text-slate-400">Real visitor interactions &bull; No simulated numbers</span>
           </div>
 
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-left">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-left ticker-grid">
             <!-- Metric 1 -->
             <div class="space-y-1">
               <div data-i18n="tickerMetric1Label" class="text-xs uppercase font-bold text-slate-500 tracking-wider">Bottles Prevented</div>
@@ -330,7 +330,7 @@
           <!-- Timeframe Selector -->
           <div class="space-y-2 pt-2 border-t border-slate-200">
             <label data-i18n="calcHorizonLabel" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider">Select Evaluation Horizon</label>
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-3 gap-2 timeframe-grid">
               <button class="timeframe-btn px-2 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition text-center" data-timeframe="monthly">
                 <span data-i18n="timeframeMonth">Monthly</span><br><span data-i18n="timeframeMonthSub" class="text-[10px] font-normal opacity-80">(30 days)</span>
               </button>
@@ -547,7 +547,7 @@
                 + Upload Custom Photo
               </button>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 ai-preset-grid">
               <button class="ai-preset-btn p-3 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-left transition text-xs space-y-1 ring-2 ring-emerald-500 bg-emerald-950/20" data-preset="thermos">
                 <div class="font-bold text-white flex items-center space-x-1">
                   <span>🟢</span>
@@ -654,7 +654,7 @@
       </div>
 
       <!-- Macro Impact Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 macro-grid">
         
         <!-- Macro 1: Current Annual Waste -->
         <div class="p-6 rounded-2xl bg-gradient-to-b from-slate-50 to-white border border-slate-200 space-y-2">

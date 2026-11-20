@@ -17,10 +17,10 @@ let chartInstance = null;
 let currentChartMode = 'cost'; // 'cost' or 'plastic'
 let currentPresetKey = 'thermos';
 let activeCalculatorTimeframe = 'academic-year';
+let customUploadedImage = null;
 
 // ----------------------------------------------------
 // StorageService: Zero-Start Real Impact Tracker
-// (Structured for 1-step migration to Supabase/Firebase)
 // ----------------------------------------------------
 const StorageService = {
   KEY_METRICS: 'ecopulse_real_metrics_v2',
@@ -31,7 +31,7 @@ const StorageService = {
       const data = localStorage.getItem(this.KEY_METRICS);
       if (data) return JSON.parse(data);
     } catch (e) {}
-    // True Zero-Start Baseline: No fake numbers
+    // True Zero-Start Baseline
     return {
       bottlesPrevented: 0,
       moneySavedUZS: 0,
@@ -51,7 +51,7 @@ const StorageService = {
       const data = localStorage.getItem(this.KEY_CHECKINS);
       if (data) return JSON.parse(data);
     } catch (e) {}
-    return []; // Empty state initially
+    return [];
   },
 
   async addCheckIn(entry) {
@@ -80,16 +80,6 @@ const StorageService = {
       localStorage.setItem(this.KEY_CHECKINS, JSON.stringify(checkins));
     } catch (e) {}
 
-    /* 
-     * Ready for Supabase / Firebase / Cloudflare D1 Backend:
-     * To connect to a live cloud database endpoint in one step:
-     * await fetch('https://your-project.supabase.co/rest/v1/checkins', {
-     *   method: 'POST',
-     *   headers: { 'apikey': '...', 'Content-Type': 'application/json' },
-     *   body: JSON.stringify(newEntry)
-     * });
-     */
-
     // Update real-time UI
     updateRealImpactUI();
     renderCheckInsFeed();
@@ -97,15 +87,19 @@ const StorageService = {
   },
 
   resetAll() {
-    localStorage.removeItem(this.KEY_METRICS);
-    localStorage.removeItem(this.KEY_CHECKINS);
+    try {
+      localStorage.removeItem(this.KEY_METRICS);
+      localStorage.removeItem(this.KEY_CHECKINS);
+    } catch (e) {}
     updateRealImpactUI();
     renderCheckInsFeed();
   }
 };
 
-// Initialize on DOM Loaded
-document.addEventListener('DOMContentLoaded', () => {
+// ----------------------------------------------------
+// Safe Application Initialization Guard
+// ----------------------------------------------------
+function initApp() {
   initLanguageSwitcher();
   initRealImpactTracker();
   initCalculator();
@@ -116,16 +110,23 @@ document.addEventListener('DOMContentLoaded', () => {
   initAudioFeedback();
   setupSmoothScrolling();
 
-  // Apply initial language
+  // Apply initial language safely without autoplaying audio
   setLanguage(currentLang);
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 
 // ----------------------------------------------------
 // 0. Multi-Language Switcher (i18n)
 // ----------------------------------------------------
 function initLanguageSwitcher() {
   document.querySelectorAll('.lang-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
       const selectedLang = btn.dataset.lang;
       if (selectedLang && ['en', 'uz', 'ru'].includes(selectedLang)) {
         setLanguage(selectedLang);
@@ -135,27 +136,32 @@ function initLanguageSwitcher() {
 }
 
 function setLanguage(lang) {
-  if (!translations[lang]) lang = 'en';
+  if (typeof translations === 'undefined' || !translations[lang]) {
+    lang = 'en';
+  }
   currentLang = lang;
-  localStorage.setItem('ecopulse_lang', lang);
+  try {
+    localStorage.setItem('ecopulse_lang', lang);
+  } catch (e) {}
   document.documentElement.lang = lang;
 
-  // Update Language Buttons UI state
+  // Update Language Buttons UI state across both desktop & mobile navbars
   document.querySelectorAll('.lang-btn').forEach(btn => {
-    if (btn.dataset.lang === lang) {
-      btn.classList.add('bg-emerald-600', 'text-white', 'shadow-sm');
-      btn.classList.remove('text-slate-600', 'hover:text-slate-900', 'bg-transparent', 'text-slate-300', 'hover:text-white');
+    const isTargetLang = btn.dataset.lang === lang;
+    const isDarkContainer = !!btn.closest('.bg-slate-800');
+
+    if (isTargetLang) {
+      btn.className = 'lang-btn px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition active:scale-95 bg-emerald-600 text-white shadow-sm';
     } else {
-      btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm');
-      if (btn.closest('.bg-slate-800')) {
-        btn.classList.add('text-slate-300', 'hover:text-white', 'bg-transparent');
+      if (isDarkContainer) {
+        btn.className = 'lang-btn px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition active:scale-95 text-slate-300 hover:text-white bg-transparent';
       } else {
-        btn.classList.add('text-slate-600', 'hover:text-slate-900', 'bg-transparent');
+        btn.className = 'lang-btn px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition active:scale-95 text-slate-600 hover:text-slate-900 bg-transparent';
       }
     }
   });
 
-  const t = translations[lang];
+  const t = (typeof translations !== 'undefined' && translations[lang]) ? translations[lang] : {};
 
   // Update static text elements
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -174,17 +180,17 @@ function setLanguage(lang) {
   });
 
   // Update dynamic sections without touching user slider values
-  if (typeof computeCalculatorResults === 'function') {
-    computeCalculatorResults();
+  if (typeof window.computeCalculatorResults === 'function') {
+    window.computeCalculatorResults();
   }
   if (typeof updateChartLanguage === 'function') {
     updateChartLanguage();
   }
-  if (typeof renderCurrentPresetVerdict === 'function') {
-    renderCurrentPresetVerdict();
+  if (typeof window.renderCurrentPresetVerdict === 'function') {
+    window.renderCurrentPresetVerdict();
   }
-  if (typeof updatePolicyCalculations === 'function') {
-    updatePolicyCalculations();
+  if (typeof window.updatePolicyCalculations === 'function') {
+    window.updatePolicyCalculations();
   }
   if (typeof updateRealImpactUI === 'function') {
     updateRealImpactUI();
@@ -239,16 +245,18 @@ function initCalculator() {
   const timeframeButtons = document.querySelectorAll('.timeframe-btn');
   const pledgeBtn = document.getElementById('calc-pledge-btn');
 
-  // Update slider display labels
+  // Update slider numeric labels and badges immediately
   function syncInputs() {
+    if (!waterSlider || !coffeeSlider) return;
+
     const waterUnit = currentLang === 'uz' ? ' idish' : currentLang === 'ru' ? ' бут.' : ' bottles';
     const coffeeUnit = currentLang === 'uz' ? ' stakan' : currentLang === 'ru' ? ' стак.' : ' cups';
 
-    if (waterVal) waterVal.innerText = waterSlider.value + waterUnit;
-    if (coffeeVal) coffeeVal.innerText = coffeeSlider.value + coffeeUnit;
+    if (waterVal) waterVal.innerText = `${waterSlider.value} ${waterUnit}`;
+    if (coffeeVal) coffeeVal.innerText = `${coffeeSlider.value} ${coffeeUnit}`;
 
-    const waterUZS = parseFloat(waterPriceInput.value) || 0;
-    const coffeeUZS = parseFloat(coffeePriceInput.value) || 0;
+    const waterUZS = parseFloat(waterPriceInput?.value) || 0;
+    const coffeeUZS = parseFloat(coffeePriceInput?.value) || 0;
 
     const waterUSDBadge = document.getElementById('water-usd-badge');
     const coffeeUSDBadge = document.getElementById('coffee-usd-badge');
@@ -259,14 +267,18 @@ function initCalculator() {
     computeCalculatorResults();
   }
 
-  // Sliders input listeners
+  // Attach real-time input AND change event listeners to all sliders & numeric inputs
   [waterSlider, coffeeSlider, waterPriceInput, coffeePriceInput].forEach(el => {
-    if (el) el.addEventListener('input', syncInputs);
+    if (el) {
+      el.addEventListener('input', syncInputs);
+      el.addEventListener('change', syncInputs);
+    }
   });
 
   // Timeframe buttons
   timeframeButtons.forEach(btn => {
     btn.addEventListener('click', (e) => {
+      e.preventDefault();
       timeframeButtons.forEach(b => {
         b.classList.remove('bg-emerald-600', 'text-white', 'shadow-md');
         b.classList.add('bg-slate-100', 'text-slate-700', 'hover:bg-slate-200');
@@ -275,7 +287,7 @@ function initCalculator() {
       btn.classList.remove('bg-slate-100', 'text-slate-700', 'hover:bg-slate-200');
 
       activeCalculatorTimeframe = btn.dataset.timeframe;
-      computeCalculatorResults();
+      syncInputs();
     });
   });
 
@@ -288,9 +300,10 @@ function initCalculator() {
   };
 
   document.querySelectorAll('.preset-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
       const p = presets[btn.dataset.preset];
-      if (p) {
+      if (p && waterSlider && coffeeSlider) {
         waterSlider.value = p.water;
         coffeeSlider.value = p.coffee;
         syncInputs();
@@ -298,10 +311,10 @@ function initCalculator() {
     });
   });
 
-  // Commit / Pledge Button listener (Adds real visitor impact to Zero-Start Tracker)
+  // Commit / Pledge Button listener
   if (pledgeBtn) {
-    pledgeBtn.addEventListener('click', () => {
-      const t = translations[currentLang] || translations.en;
+    pledgeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
       const pledgeName = (currentLang === 'uz' ? 'Talaba va\'dasi' : currentLang === 'ru' ? 'Обязательство студента' : 'Student Pledge');
       const containerDesc = (currentLang === 'uz' ? 'Chiqindisiz termosga o\'tish' : currentLang === 'ru' ? 'Отказ от одноразового пластика' : 'Zero-Waste Reusable Pledge');
 
@@ -331,6 +344,8 @@ function initCalculator() {
 
   // Primary Computation Function
   window.computeCalculatorResults = function() {
+    if (!waterSlider || !coffeeSlider || !waterPriceInput || !coffeePriceInput) return;
+
     const waterCount = parseFloat(waterSlider.value) || 0;
     const coffeeCount = parseFloat(coffeeSlider.value) || 0;
     const waterPrice = parseFloat(waterPriceInput.value) || 0;
@@ -360,7 +375,8 @@ function initCalculator() {
     const totalSpendUSD = totalSpendUZS / EXCHANGE_RATE;
 
     // Environmental calculations
-    const totalItems = (waterCount + coffeeCount) * days;
+    const dailyItems = waterCount + coffeeCount;
+    const totalItems = dailyItems * days;
     const totalWeightKg = ((waterCount * BOTTLE_PLASTIC_KG) + (coffeeCount * CUP_PLASTIC_KG)) * days;
     const totalCO2Kg = totalWeightKg * CO2_PER_KG_PLASTIC;
 
@@ -407,7 +423,7 @@ function initCalculator() {
 
     if (outLossUZS) outLossUZS.innerText = totalSpendUZS.toLocaleString() + ' UZS';
     if (outLossUSD) outLossUSD.innerText = `≈ $${totalSpendUSD.toFixed(2)} USD`;
-    if (outItems) outItems.innerText = totalItems.toLocaleString() + itemsUnit;
+    if (outItems) outItems.innerText = totalItems.toLocaleString() + ' ' + itemsUnit;
     if (outWeight) outWeight.innerText = totalWeightKg.toFixed(1) + ' kg';
     if (outCO2) outCO2.innerText = totalCO2Kg.toFixed(1) + ' kg CO₂e';
     if (outRoiDays) outRoiDays.innerHTML = roiMessage;
@@ -416,10 +432,10 @@ function initCalculator() {
 
     const waterUnit = currentLang === 'uz' ? ' idish' : currentLang === 'ru' ? ' бут.' : ' bottles';
     const coffeeUnit = currentLang === 'uz' ? ' stakan' : currentLang === 'ru' ? ' стак.' : ' cups';
-    if (waterVal) waterVal.innerText = waterCount + waterUnit;
-    if (coffeeVal) coffeeVal.innerText = coffeeCount + coffeeUnit;
+    if (waterVal) waterVal.innerText = `${waterCount} ${waterUnit}`;
+    if (coffeeVal) coffeeVal.innerText = `${coffeeCount} ${coffeeUnit}`;
 
-    updateChartData(dailyTotalSpend, totalWeightKg / days);
+    updateChartData(dailyTotalSpend, dailyItems);
   };
 
   syncInputs();
@@ -430,17 +446,24 @@ function initCalculator() {
 // ----------------------------------------------------
 function initChart() {
   const ctx = document.getElementById('impactChart');
-  if (!ctx) return;
+  if (!ctx || typeof Chart === 'undefined') return;
 
-  const t = translations[currentLang] || translations.en;
+  const t = (typeof translations !== 'undefined' && translations[currentLang]) ? translations[currentLang] : (translations?.en || {});
+
+  // Destroy existing chart if present
+  if (chartInstance) {
+    try {
+      chartInstance.destroy();
+    } catch (e) {}
+  }
 
   chartInstance = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: t.monthNames,
+      labels: t.monthNames || ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5', 'Month 6', 'Month 7', 'Month 8', 'Month 9'],
       datasets: [
         {
-          label: t.chartStatusQuoCost,
+          label: t.chartStatusQuoCost || 'Status Quo: Single-Use Spend',
           data: [230000, 460000, 690000, 920000, 1150000, 1380000, 1610000, 1840000, 2070000],
           borderColor: '#EF4444',
           backgroundColor: 'rgba(239, 68, 68, 0.08)',
@@ -454,7 +477,7 @@ function initChart() {
           pointHoverRadius: 6
         },
         {
-          label: t.chartZeroWasteCost,
+          label: t.chartZeroWasteCost || 'Zero-Waste: Thermos + Refills',
           data: [150000, 155000, 160000, 165000, 170000, 175000, 180000, 185000, 190000],
           borderColor: '#10B981',
           backgroundColor: 'rgba(16, 185, 129, 0.12)',
@@ -495,12 +518,12 @@ function initChart() {
           callbacks: {
             label: function(context) {
               const val = context.parsed.y;
-              const tr = translations[currentLang] || translations.en;
+              const tr = (typeof translations !== 'undefined' && translations[currentLang]) ? translations[currentLang] : (translations?.en || {});
               if (currentChartMode === 'cost') {
                 const usd = (val / EXCHANGE_RATE).toFixed(2);
                 return `${context.dataset.label}: ${val.toLocaleString()} UZS ($${usd})`;
               } else {
-                return `${context.dataset.label}: ${val.toLocaleString()} ${tr.chartItemsUnit}`;
+                return `${context.dataset.label}: ${val.toLocaleString()} ${tr.chartItemsUnit || 'items'}`;
               }
             }
           }
@@ -517,13 +540,13 @@ function initChart() {
             font: { family: 'Inter', size: 11 },
             color: '#64748B',
             callback: function(value) {
-              const tr = translations[currentLang] || translations.en;
+              const tr = (typeof translations !== 'undefined' && translations[currentLang]) ? translations[currentLang] : (translations?.en || {});
               if (currentChartMode === 'cost') {
                 if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M UZS';
                 if (value >= 1000) return (value / 1000) + 'k UZS';
                 return value;
               } else {
-                return value + ' ' + tr.chartItemsUnit;
+                return value + ' ' + (tr.chartItemsUnit || 'items');
               }
             }
           }
@@ -536,52 +559,58 @@ function initChart() {
   const plasticBtn = document.getElementById('chart-view-plastic');
 
   if (costBtn && plasticBtn) {
-    costBtn.addEventListener('click', () => {
+    costBtn.addEventListener('click', (e) => {
+      e.preventDefault();
       currentChartMode = 'cost';
       costBtn.classList.add('bg-slate-900', 'text-white');
       costBtn.classList.remove('bg-white', 'text-slate-700');
       plasticBtn.classList.remove('bg-slate-900', 'text-white');
       plasticBtn.classList.add('bg-white', 'text-slate-700');
-      computeCalculatorResults();
+      if (typeof window.computeCalculatorResults === 'function') {
+        window.computeCalculatorResults();
+      }
     });
 
-    plasticBtn.addEventListener('click', () => {
+    plasticBtn.addEventListener('click', (e) => {
+      e.preventDefault();
       currentChartMode = 'plastic';
       plasticBtn.classList.add('bg-slate-900', 'text-white');
       plasticBtn.classList.remove('bg-white', 'text-slate-700');
       costBtn.classList.remove('bg-slate-900', 'text-white');
       costBtn.classList.add('bg-white', 'text-slate-700');
-      computeCalculatorResults();
+      if (typeof window.computeCalculatorResults === 'function') {
+        window.computeCalculatorResults();
+      }
     });
   }
 }
 
 function updateChartLanguage() {
   if (!chartInstance) return;
-  const t = translations[currentLang] || translations.en;
-  chartInstance.data.labels = t.monthNames;
+  const t = (typeof translations !== 'undefined' && translations[currentLang]) ? translations[currentLang] : (translations?.en || {});
+  chartInstance.data.labels = t.monthNames || ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5', 'Month 6', 'Month 7', 'Month 8', 'Month 9'];
 
   if (currentChartMode === 'cost') {
-    chartInstance.data.datasets[0].label = t.chartStatusQuoCost;
-    chartInstance.data.datasets[1].label = t.chartZeroWasteCost;
+    chartInstance.data.datasets[0].label = t.chartStatusQuoCost || 'Status Quo: Single-Use Spend';
+    chartInstance.data.datasets[1].label = t.chartZeroWasteCost || 'Zero-Waste: Thermos + Refills';
   } else {
-    chartInstance.data.datasets[0].label = t.chartStatusQuoPlastic;
-    chartInstance.data.datasets[1].label = t.chartZeroWastePlastic;
+    chartInstance.data.datasets[0].label = t.chartStatusQuoPlastic || 'Single-Use Items Discarded';
+    chartInstance.data.datasets[1].label = t.chartZeroWastePlastic || 'Zero-Waste Plastic Waste';
   }
   chartInstance.update();
 }
 
 function updateChartData(dailyCostUZS, dailyItems) {
   if (!chartInstance) return;
-  const t = translations[currentLang] || translations.en;
+  const t = (typeof translations !== 'undefined' && translations[currentLang]) ? translations[currentLang] : (translations?.en || {});
 
   const monthlyDays = 30;
   const singleUseData = [];
   const zeroWasteData = [];
 
   if (currentChartMode === 'cost') {
-    chartInstance.data.datasets[0].label = t.chartStatusQuoCost;
-    chartInstance.data.datasets[1].label = t.chartZeroWasteCost;
+    chartInstance.data.datasets[0].label = t.chartStatusQuoCost || 'Status Quo: Single-Use Purchases';
+    chartInstance.data.datasets[1].label = t.chartZeroWasteCost || 'Zero-Waste: Reusable Thermos + Free Refills';
 
     for (let m = 1; m <= 9; m++) {
       singleUseData.push(Math.round(dailyCostUZS * monthlyDays * m));
@@ -589,8 +618,8 @@ function updateChartData(dailyCostUZS, dailyItems) {
       zeroWasteData.push(zeroWasteCost);
     }
   } else {
-    chartInstance.data.datasets[0].label = t.chartStatusQuoPlastic;
-    chartInstance.data.datasets[1].label = t.chartZeroWastePlastic;
+    chartInstance.data.datasets[0].label = t.chartStatusQuoPlastic || 'Cumulative Plastic Items Discarded';
+    chartInstance.data.datasets[1].label = t.chartZeroWastePlastic || 'Zero-Waste Plastic Waste';
 
     for (let m = 1; m <= 9; m++) {
       singleUseData.push(Math.round(dailyItems * monthlyDays * m));
@@ -704,6 +733,39 @@ const presetTranslations = {
       verdict_title: 'Обнаружен одноразовый PET-пластик',
       verdict_msg: 'Совет: Перейдите на многоразовую бутылку, чтобы экономить ~120 000 сум/мес.',
       recommendation: 'Доступна скидка 20% на фирменные термосы EcoPulse в книжном магазине кампуса.'
+    }
+  },
+  custom: {
+    type: 'reusable',
+    confidence: 99.2,
+    inference_ms: 36,
+    co2_saved_kg: 0.144,
+    reward_points: 15,
+    savings_uzs: 4000,
+    model: 'EcoVision-YOLOv8-Nano-v2.4',
+    en: {
+      name: 'Custom User Uploaded Bottle / Thermos',
+      features: ['Multi-wall Refillable Container Profile', 'Food-grade Material Signature', 'Verified Zero Single-Use Waste'],
+      full_verdict: '✅ Verified Reusable Container (99.2% confidence) — +15 EcoPoints & 4,000 UZS saved added to your profile!',
+      verdict_title: 'Verified Reusable Container',
+      verdict_msg: '+15 EcoPoints & 4,000 UZS saved added to your profile!',
+      recommendation: 'Campus hydro-station unlocked: Free cold/sparkling filtered water refill authorized.'
+    },
+    uz: {
+      name: 'Foydalanuvchi yuklagan maxsus termos / shisha',
+      features: ['Ko\'p qatlamli to\'ldiriladigan idish', 'Oziq-ovqatbop material imzosi', 'Bir martalik plastik belgisi yo\'q'],
+      full_verdict: '✅ Tasdiqlangan ko\'p martalik idish (99.2% aniqlik) — Profilingizga +15 EcoPoint va 4 000 so\'m tejamkorlik qo\'shildi!',
+      verdict_title: 'Tasdiqlangan ko\'p martalik idish',
+      verdict_msg: 'Profilingizga +15 EcoPoint va 4 000 so\'m tejamkorlik qo\'shildi!',
+      recommendation: 'Kampus gidro-stansiyasi ochildi: Bepul toza filtrlangan suv olishga ruxsat berildi.'
+    },
+    ru: {
+      name: 'Загруженная пользователем ёмкость',
+      features: ['Многоразовая конструкция ёмкости', 'Сигнатура пищевого полимера/стали', 'Отсутствие следов одноразового PET'],
+      full_verdict: '✅ Подтверждена многоразовая ёмкость (точность 99.2%) — В профиль начислено +15 EcoPoints и сэкономлено 4 000 сум!',
+      verdict_title: 'Подтверждена многоразовая ёмкость',
+      verdict_msg: 'В профиль начислено +15 EcoPoints и сэкономлено 4 000 сум!',
+      recommendation: 'Доступ к гидростанции открыт: Авторизован бесплатный набор чистой фильтрованной воды.'
     }
   }
 };
@@ -829,45 +891,73 @@ function initAISimulator() {
     `
   };
 
-  function runVisionScan(presetKey, customImgUrl = null) {
+  function runVisionScan(presetKey, customImgUrl = null, userTriggered = false) {
     currentPresetKey = presetKey;
-    const t = translations[currentLang] || translations.en;
+    const t = (typeof translations !== 'undefined' && translations[currentLang]) ? translations[currentLang] : (translations?.en || {});
 
-    if (statusText) statusText.innerText = t.aiStatusAnalyzing;
-    scannerLine.classList.remove('hidden');
-    resultCard.classList.add('opacity-40', 'pointer-events-none');
-
-    if (customImgUrl) {
-      previewSvg.classList.add('hidden');
-      previewImg.src = customImgUrl;
-      previewImg.classList.remove('hidden');
-    } else {
-      previewImg.classList.add('hidden');
-      previewSvg.innerHTML = presetSvgs[presetKey] || presetSvgs['thermos'];
-      previewSvg.classList.remove('hidden');
+    if (statusText) {
+      statusText.innerText = t.aiStatusAnalyzing || 'Neural Vision Analyzing...';
+    }
+    if (statusBadge) {
+      statusBadge.classList.remove('border-emerald-500/30', 'bg-emerald-950/60', 'text-emerald-400');
+      statusBadge.classList.add('border-amber-500/30', 'bg-amber-950/60', 'text-amber-400');
     }
 
-    playAudioScan();
+    if (scannerLine) scannerLine.classList.remove('hidden');
+    if (resultCard) {
+      resultCard.classList.add('opacity-40', 'pointer-events-none');
+    }
+
+    if (customImgUrl) {
+      customUploadedImage = customImgUrl;
+      if (previewSvg) previewSvg.classList.add('hidden');
+      if (previewImg) {
+        previewImg.src = customImgUrl;
+        previewImg.classList.remove('hidden');
+      }
+    } else {
+      if (previewImg) previewImg.classList.add('hidden');
+      if (previewSvg) {
+        previewSvg.innerHTML = presetSvgs[presetKey] || presetSvgs['thermos'];
+        previewSvg.classList.remove('hidden');
+      }
+    }
+
+    // Only play audio on user action
+    if (userTriggered) {
+      playAudioScan();
+    }
 
     setTimeout(() => {
-      scannerLine.classList.add('hidden');
-      resultCard.classList.remove('opacity-40', 'pointer-events-none');
-      const tr = translations[currentLang] || translations.en;
-      if (statusText) statusText.innerText = tr.aiStatusComplete;
+      if (scannerLine) scannerLine.classList.add('hidden');
+      if (resultCard) {
+        resultCard.classList.remove('opacity-40', 'pointer-events-none');
+      }
+      const tr = (typeof translations !== 'undefined' && translations[currentLang]) ? translations[currentLang] : (translations?.en || {});
+      if (statusText) statusText.innerText = tr.aiStatusComplete || 'Inference Complete (38ms)';
+      if (statusBadge) {
+        statusBadge.classList.remove('border-amber-500/30', 'bg-amber-950/60', 'text-amber-400');
+        statusBadge.classList.add('border-emerald-500/30', 'bg-emerald-950/60', 'text-emerald-400');
+      }
 
       const data = getLocalizedPresetData(presetKey, currentLang);
-      renderVerdict(data);
+      renderVerdict(data, userTriggered);
     }, 1500);
   }
 
-  function renderVerdict(data) {
-    const isReusable = data.type === 'reusable';
-    const t = translations[currentLang] || translations.en;
+  function renderVerdict(data, userTriggered = false) {
+    if (!resultCard) return;
 
-    if (isReusable) {
-      playAudioSuccess();
-    } else {
-      playAudioWarning();
+    const isReusable = data.type === 'reusable';
+    const t = (typeof translations !== 'undefined' && translations[currentLang]) ? translations[currentLang] : (translations?.en || {});
+
+    // Only play audio on explicit user interaction
+    if (userTriggered) {
+      if (isReusable) {
+        playAudioSuccess();
+      } else {
+        playAudioWarning();
+      }
     }
 
     const badgeColor = isReusable ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-amber-100 text-amber-800 border-amber-300';
@@ -914,83 +1004,99 @@ function initAISimulator() {
         <!-- Telemetry Details Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs text-slate-600">
           <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-            <span class="text-slate-400 block text-[10px] uppercase font-bold">${t.aiTelemetryCo2}</span>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">${t.aiTelemetryCo2 || 'CO₂ Avoided'}</span>
             <span class="font-bold text-slate-800 text-sm">${isReusable ? `+${(data.co2_saved_kg * 1000).toFixed(0)}g CO₂e` : '0g'}</span>
           </div>
           <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-            <span class="text-slate-400 block text-[10px] uppercase font-bold">${t.aiTelemetryPoints}</span>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">${t.aiTelemetryPoints || 'EcoPoints Earned'}</span>
             <span class="font-bold text-slate-800 text-sm">${isReusable ? `+${data.reward_points} pts` : '0 pts'}</span>
           </div>
           <div class="col-span-2 sm:col-span-1 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-            <span class="text-slate-400 block text-[10px] uppercase font-bold">${t.aiTelemetryReward}</span>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">${t.aiTelemetryReward || 'Economic Reward'}</span>
             <span class="font-bold text-slate-800 text-sm">${isReusable ? `+${data.savings_uzs.toLocaleString()} UZS` : '0 UZS'}</span>
           </div>
         </div>
 
+        <!-- Check-In Logging Drawer (Opened for all container scans) -->
         ${isReusable ? `
-        <!-- Real Check-In Submission Form (Updates Zero-Start Live Tracker) -->
-        <div class="p-4 rounded-xl bg-slate-900 text-white space-y-3 shadow-lg border border-emerald-500/30">
+        <div id="ai-checkin-drawer" class="p-4 rounded-xl bg-slate-900 text-white space-y-3 shadow-lg border border-emerald-500/30 transition-all">
           <div class="flex items-center justify-between text-xs">
             <div class="font-bold flex items-center space-x-2">
               <span class="text-emerald-400">⚡</span>
-              <span>${t.aiTelegramTitle}</span>
+              <span>${t.aiTelegramTitle || 'Log Real Campus Check-In'}</span>
             </div>
-            <span class="text-[11px] text-slate-400 font-mono">+15 EcoPoints &bull; +4,000 UZS</span>
+            <span class="text-[11px] text-emerald-400 font-mono font-bold">+15 EcoPoints &bull; +4,000 UZS</span>
           </div>
+          <p class="text-[11px] text-slate-300">${t.aiTelegramSub || 'Record this verified container into the live campus impact feed'}</p>
           <div class="flex flex-col sm:flex-row gap-2">
-            <input id="ai-checkin-name-input" type="text" maxlength="30" placeholder="${t.aiNamePlaceholder}" class="flex-1 px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500">
+            <input id="ai-checkin-name-input" type="text" maxlength="30" placeholder="${t.aiNamePlaceholder || 'Your Name or Nickname (optional)'}" class="flex-1 px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500">
             <button id="ai-btn-log-checkin" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition active:scale-95 whitespace-nowrap">
-              ${t.aiLogCheckinBtn}
+              ${t.aiLogCheckinBtn || 'Log Verified Check-In (+15 EcoPoints & 4,000 UZS)'}
             </button>
           </div>
         </div>
         ` : `
-        <!-- Single-Use Warning Action -->
-        <div class="p-3.5 rounded-xl bg-slate-900 text-white flex items-center justify-between text-xs">
-          <span class="text-slate-300">Switch to a reusable flask to earn EcoPoints:</span>
-          <a href="#calculator" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition">
-            Calculate Savings
-          </a>
+        <div id="ai-checkin-drawer" class="p-4 rounded-xl bg-slate-900 text-white space-y-3 shadow-lg border border-amber-500/30 transition-all">
+          <div class="flex items-center justify-between text-xs">
+            <div class="font-bold flex items-center space-x-2">
+              <span class="text-amber-400">🌱</span>
+              <span>${t.aiPledgeTitle || 'Log Zero-Waste Switch Pledge'}</span>
+            </div>
+            <span class="text-[11px] text-amber-400 font-mono font-bold">+10 EcoPoints &bull; +4,000 UZS</span>
+          </div>
+          <p class="text-[11px] text-slate-300">Pledge to switch to a reusable thermos and log your first step toward zero-waste on campus:</p>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input id="ai-checkin-name-input" type="text" maxlength="30" placeholder="${t.aiNamePlaceholder || 'Your Name or Nickname (optional)'}" class="flex-1 px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500">
+            <button id="ai-btn-log-checkin" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition active:scale-95 whitespace-nowrap">
+              ${t.aiLogPledgeBtn || 'Pledge to Switch & Log (+10 EcoPoints & 4,000 UZS)'}
+            </button>
+          </div>
+          <div class="pt-1 text-right">
+            <a href="#calculator" class="text-emerald-400 hover:text-emerald-300 text-[11px] font-semibold underline">
+              Calculate Full Academic Savings &rarr;
+            </a>
+          </div>
         </div>
         `}
       </div>
     `;
 
-    // Connect Log Check-In Button
-    if (isReusable) {
-      const logBtn = document.getElementById('ai-btn-log-checkin');
-      const nameInput = document.getElementById('ai-checkin-name-input');
-      if (logBtn) {
-        logBtn.addEventListener('click', () => {
-          const customName = nameInput ? nameInput.value.trim() : '';
-          StorageService.addCheckIn({
-            name: customName || (translations[currentLang]?.anonymousStudent || 'Anonymous Student'),
-            containerType: data.name,
-            savingsUZS: 4000,
-            points: 15,
-            co2Kg: 0.144,
-            timestamp: Date.now()
-          });
+    // Connect Log Check-In Button inside Drawer
+    const logBtn = document.getElementById('ai-btn-log-checkin');
+    const nameInput = document.getElementById('ai-checkin-name-input');
+    if (logBtn) {
+      logBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const customName = nameInput ? nameInput.value.trim() : '';
+        const isSingleUse = !isReusable;
 
-          playAudioSuccess();
-          showNotificationToast(
-            currentLang === 'uz' ? 'Tekshiruv muvaffaqiyatli qayd etildi!' : currentLang === 'ru' ? 'Чек-ин успешно зафиксирован!' : 'Check-In Successfully Logged!',
-            currentLang === 'uz' ? '+15 EcoPoint va +4 000 so\'m tejamkorlik profilingizga qo\'shildi.' : currentLang === 'ru' ? '+15 EcoPoints и +4 000 сум добавлены в профиль кампуса.' : '+15 EcoPoints & +4,000 UZS added to live campus records.'
-          );
-
-          // Disable button to prevent spamming
-          logBtn.disabled = true;
-          logBtn.innerText = currentLang === 'uz' ? '✓ Qayd etildi' : currentLang === 'ru' ? '✓ Зафиксировано' : '✓ Logged to Live Feed';
-          logBtn.classList.remove('bg-emerald-500', 'hover:bg-emerald-400');
-          logBtn.classList.add('bg-slate-700', 'text-slate-300', 'cursor-not-allowed');
-
-          const bottlesEl = document.getElementById('ticker-bottles');
-          if (bottlesEl) {
-            bottlesEl.classList.add('number-flash');
-            setTimeout(() => bottlesEl.classList.remove('number-flash'), 500);
-          }
+        StorageService.addCheckIn({
+          name: customName || (translations[currentLang]?.anonymousStudent || 'Anonymous Student'),
+          containerType: isSingleUse ? 'Zero-Waste Switch (PET Bottle Detected)' : data.name,
+          savingsUZS: 4000,
+          points: isSingleUse ? 10 : 15,
+          co2Kg: 0.144,
+          timestamp: Date.now()
         });
-      }
+
+        playAudioSuccess();
+        showNotificationToast(
+          currentLang === 'uz' ? 'Tekshiruv muvaffaqiyatli qayd etildi!' : currentLang === 'ru' ? 'Чек-ин успешно зафиксирован!' : 'Check-In Successfully Logged!',
+          currentLang === 'uz' ? `+${isSingleUse ? '10' : '15'} EcoPoint va +4 000 so'm tejamkorlik profilingizga qo'shildi.` : currentLang === 'ru' ? `+${isSingleUse ? '10' : '15'} EcoPoints и +4 000 сум добавлены в профиль кампуса.` : `+${isSingleUse ? '10' : '15'} EcoPoints & +4,000 UZS added to live campus records.`
+        );
+
+        // Update button state to prevent double submit
+        logBtn.disabled = true;
+        logBtn.innerText = currentLang === 'uz' ? '✓ Qayd etildi' : currentLang === 'ru' ? '✓ Зафиксировано' : '✓ Logged to Live Feed';
+        logBtn.classList.remove('bg-emerald-500', 'hover:bg-emerald-400', 'bg-amber-500', 'hover:bg-amber-400');
+        logBtn.classList.add('bg-slate-700', 'text-slate-300', 'cursor-not-allowed');
+
+        const bottlesEl = document.getElementById('ticker-bottles');
+        if (bottlesEl) {
+          bottlesEl.classList.add('number-flash');
+          setTimeout(() => bottlesEl.classList.remove('number-flash'), 500);
+        }
+      });
     }
 
     // Render JSON telemetry
@@ -1012,8 +1118,8 @@ function initAISimulator() {
         anti_spoofing_check: 'passed'
       },
       behavioral_incentives: {
-        points_awarded: data.reward_points,
-        savings_uzs: data.savings_uzs,
+        points_awarded: isReusable ? data.reward_points : 10,
+        savings_uzs: 4000,
         campus_refill_eligible: isReusable
       }
     };
@@ -1025,54 +1131,65 @@ function initAISimulator() {
 
   window.renderCurrentPresetVerdict = function() {
     const data = getLocalizedPresetData(currentPresetKey, currentLang);
-    renderVerdict(data);
+    renderVerdict(data, false);
   };
 
-  // Preset Buttons Event Listeners
+  // Preset Buttons Event Listeners (Reusable Thermos, Glass Bottle, Single-Use Plastic Bottle)
   document.querySelectorAll('.ai-preset-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
       document.querySelectorAll('.ai-preset-btn').forEach(b => {
-        b.classList.remove('ring-2', 'ring-emerald-500', 'bg-emerald-50');
+        b.classList.remove('ring-2', 'ring-emerald-500', 'bg-emerald-950/20');
       });
-      btn.classList.add('ring-2', 'ring-emerald-500', 'bg-emerald-50');
-      runVisionScan(btn.dataset.preset);
+      btn.classList.add('ring-2', 'ring-emerald-500', 'bg-emerald-950/20');
+      runVisionScan(btn.dataset.preset, null, true);
     });
   });
 
-  // Upload Handling
+  // Photo Upload & Dropzone Handling
   if (dropzone && fileInput) {
     dropzone.addEventListener('click', () => fileInput.click());
 
     fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
+      const file = e.target.files && e.target.files[0];
       if (file) {
         const reader = new FileReader();
         reader.onload = (event) => {
-          runVisionScan('thermos', event.target.result);
+          document.querySelectorAll('.ai-preset-btn').forEach(b => {
+            b.classList.remove('ring-2', 'ring-emerald-500', 'bg-emerald-950/20');
+          });
+          runVisionScan('custom', event.target.result, true);
         };
         reader.readAsDataURL(file);
+        // Clear input value so same file can be re-selected if desired
+        fileInput.value = '';
       }
     });
 
     ['dragenter', 'dragover'].forEach(eventName => {
       dropzone.addEventListener(eventName, (e) => {
         e.preventDefault();
-        dropzone.classList.add('border-emerald-500', 'bg-emerald-50/50');
+        dropzone.classList.add('border-emerald-500', 'bg-emerald-950/30');
       });
     });
+
     ['dragleave', 'drop'].forEach(eventName => {
       dropzone.addEventListener(eventName, (e) => {
         e.preventDefault();
-        dropzone.classList.remove('border-emerald-500', 'bg-emerald-50/50');
+        dropzone.classList.remove('border-emerald-500', 'bg-emerald-950/30');
       });
     });
+
     dropzone.addEventListener('drop', (e) => {
       const dt = e.dataTransfer;
-      const file = dt.files[0];
+      const file = dt && dt.files && dt.files[0];
       if (file) {
         const reader = new FileReader();
         reader.onload = (event) => {
-          runVisionScan('thermos', event.target.result);
+          document.querySelectorAll('.ai-preset-btn').forEach(b => {
+            b.classList.remove('ring-2', 'ring-emerald-500', 'bg-emerald-950/20');
+          });
+          runVisionScan('custom', event.target.result, true);
         };
         reader.readAsDataURL(file);
       }
@@ -1081,15 +1198,26 @@ function initAISimulator() {
 
   // JSON Raw Toggle
   if (jsonToggle && jsonContainer) {
-    jsonToggle.addEventListener('click', () => {
+    jsonToggle.addEventListener('click', (e) => {
+      e.preventDefault();
       jsonContainer.classList.toggle('hidden');
-      const tr = translations[currentLang] || translations.en;
-      jsonToggle.innerText = jsonContainer.classList.contains('hidden') ? tr.aiJsonToggleShow : tr.aiJsonToggleHide;
+      const tr = (typeof translations !== 'undefined' && translations[currentLang]) ? translations[currentLang] : (translations?.en || {});
+      jsonToggle.innerText = jsonContainer.classList.contains('hidden') 
+        ? (tr.aiJsonToggleShow || 'View Raw AI Vision JSON Telemetry ↓') 
+        : (tr.aiJsonToggleHide || 'Hide JSON Telemetry ↑');
     });
   }
 
-  // Run initial default preset
-  runVisionScan('thermos');
+  // Initial silent preview setup (no audio played on load)
+  const defaultData = getLocalizedPresetData('thermos', currentLang);
+  if (previewSvg) {
+    previewSvg.innerHTML = presetSvgs['thermos'];
+    previewSvg.classList.remove('hidden');
+  }
+  if (previewImg) {
+    previewImg.classList.add('hidden');
+  }
+  renderVerdict(defaultData, false);
 }
 
 // ----------------------------------------------------
@@ -1115,7 +1243,7 @@ function initCampusPolicy() {
   window.updatePolicyCalculations = function() {
     if (!studentsSlider) return;
     const students = parseInt(studentsSlider.value) || 2000;
-    const t = translations[currentLang] || translations.en;
+    const t = (typeof translations !== 'undefined' && translations[currentLang]) ? translations[currentLang] : (translations?.en || {});
 
     if (studentsVal) {
       studentsVal.innerText = `${students.toLocaleString()} ${studentSuffixes[currentLang] || 'students'}`;
@@ -1136,16 +1264,16 @@ function initCampusPolicy() {
     const totalCapexUSD = totalCapexUZS / EXCHANGE_RATE;
 
     const dailyCommunitySavings = (students * 0.5 * ((1.5 * 4000) + (0.8 * 15000)));
-    const paybackDays = Math.ceil(totalCapexUZS / dailyCommunitySavings);
+    const paybackDays = Math.ceil(totalCapexUZS / (dailyCommunitySavings || 1));
 
-    if (macroPlastic) macroPlastic.innerText = (totalSingleUseItems / 1000000).toFixed(2) + ' ' + t.policyMillionItems;
+    if (macroPlastic) macroPlastic.innerText = (totalSingleUseItems / 1000000).toFixed(2) + ' ' + (t.policyMillionItems || 'Million items');
     if (macroKg) {
-      const kgUnit = currentLang === 'uz' ? 'tonna qattiq chiqindi' : currentLang === 'ru' ? 'тонн твёрдых отходов' : 'metric tons plastic';
+      const kgUnit = currentLang === 'uz' ? 'tonna qattiq chiqindi' : currentLang === 'ru' ? 'тонн твёрдых отходов' : 'metric tons solid waste';
       macroKg.innerText = `≈ ${(totalPlasticKg / 1000).toFixed(1)} ${kgUnit}`;
     }
-    if (macroLossUZS) macroLossUZS.innerText = (totalStudentSpendUZS / 1000000000).toFixed(2) + ' ' + t.policyBillionUZS;
+    if (macroLossUZS) macroLossUZS.innerText = (totalStudentSpendUZS / 1000000000).toFixed(2) + ' ' + (t.policyBillionUZS || 'Billion UZS');
     if (macroLossUSD) macroLossUSD.innerText = `≈ $${Math.round(totalStudentSpendUSD).toLocaleString()} USD`;
-    if (macroStations) macroStations.innerText = `${stationsNeeded} ${t.policySmartStations}`;
+    if (macroStations) macroStations.innerText = `${stationsNeeded} ${t.policySmartStations || 'Smart Stations'}`;
     if (macroCapex) macroCapex.innerText = `${(totalCapexUZS / 1000000).toFixed(0)}M UZS (~$${Math.round(totalCapexUSD).toLocaleString()})`;
     if (macroPayback) {
       if (currentLang === 'uz') {
@@ -1160,17 +1288,19 @@ function initCampusPolicy() {
 
   if (studentsSlider) {
     studentsSlider.addEventListener('input', window.updatePolicyCalculations);
+    studentsSlider.addEventListener('change', window.updatePolicyCalculations);
     window.updatePolicyCalculations();
   }
 }
 
 // ----------------------------------------------------
-// 6. Real User Check-Ins Feed (Replacing Fake Leaderboard)
+// 6. Real User Check-Ins Feed
 // ----------------------------------------------------
 function initCheckInsFeed() {
   const resetBtn = document.getElementById('btn-reset-pilot');
   if (resetBtn) {
-    resetBtn.addEventListener('click', () => {
+    resetBtn.addEventListener('click', (e) => {
+      e.preventDefault();
       const confirmMsg = currentLang === 'uz' 
         ? 'Barcha lokal pilot tekshiruvlarini 0 ga qaytarishni xohlaysizmi?' 
         : currentLang === 'ru' 
@@ -1191,7 +1321,7 @@ function initCheckInsFeed() {
 }
 
 function formatTimeAgo(timestamp) {
-  const t = translations[currentLang] || translations.en;
+  const t = (typeof translations !== 'undefined' && translations[currentLang]) ? translations[currentLang] : (translations?.en || {});
   const diffSec = Math.floor((Date.now() - timestamp) / 1000);
   if (diffSec < 45) return t.justNow || 'Just now';
   const diffMin = Math.floor(diffSec / 60);
@@ -1211,7 +1341,7 @@ function renderCheckInsFeed() {
   if (!container) return;
 
   const checkins = StorageService.getCheckIns();
-  const t = translations[currentLang] || translations.en;
+  const t = (typeof translations !== 'undefined' && translations[currentLang]) ? translations[currentLang] : (translations?.en || {});
 
   if (badgeEl) {
     const unit = currentLang === 'uz' ? 'ta tekshiruv' : currentLang === 'ru' ? 'чек-инов' : 'check-ins';
@@ -1219,7 +1349,6 @@ function renderCheckInsFeed() {
   }
 
   if (checkins.length === 0) {
-    // Beautiful empty state with call-to-action
     container.innerHTML = `
       <div class="p-8 sm:p-12 text-center space-y-4">
         <div class="w-16 h-16 mx-auto rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl shadow-sm border border-emerald-100">
@@ -1227,16 +1356,16 @@ function renderCheckInsFeed() {
         </div>
         <div class="space-y-1.5 max-w-md mx-auto">
           <h4 class="font-display font-bold text-base sm:text-lg text-slate-800 leading-snug">
-            ${t.feedEmptyTitle}
+            ${t.feedEmptyTitle || 'No check-ins yet — be the first student to log a reusable bottle above!'}
           </h4>
           <p class="text-xs text-slate-500 leading-relaxed">
-            ${t.feedSubtitle}
+            ${t.feedSubtitle || 'Live log of students verifying reusable containers and pledging zero-waste habits across campus.'}
           </p>
         </div>
         <div class="pt-2">
           <a href="#ai-simulator" class="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition shadow-md shadow-emerald-600/20 active:scale-95">
             <span>🔍</span>
-            <span>${t.feedEmptyBtn}</span>
+            <span>${t.feedEmptyBtn || 'Test AI Scanner & Log First Check-In'}</span>
           </a>
         </div>
       </div>
@@ -1247,7 +1376,7 @@ function renderCheckInsFeed() {
   // Render Real Check-ins Feed
   let html = '';
   checkins.forEach((entry, idx) => {
-    const isPledge = entry.containerType.includes('Pledge') || entry.containerType.includes('va\'da') || entry.containerType.includes('Обязательство');
+    const isPledge = entry.containerType.includes('Pledge') || entry.containerType.includes('va\'da') || entry.containerType.includes('Обязательство') || entry.containerType.includes('Switch');
     const icon = isPledge ? '🌱' : '✅';
     const borderAccent = idx === 0 ? 'bg-emerald-50/40' : '';
 
@@ -1284,7 +1413,7 @@ function renderCheckInsFeed() {
 
 function escapeHtml(str) {
   if (!str) return '';
-  return str.replace(/[&<>"']/g, function(m) {
+  return String(str).replace(/[&<>"']/g, function(m) {
     return {
       '&': '&amp;',
       '<': '&lt;',
@@ -1296,26 +1425,42 @@ function escapeHtml(str) {
 }
 
 // ----------------------------------------------------
-// 7. Web Audio API Chimes (Zero external audio assets)
+// 7. Web Audio API Chimes (User-gesture safe)
 // ----------------------------------------------------
 let audioCtx = null;
+let userHasInteracted = false;
 
 function initAudioFeedback() {
-  const initAudio = () => {
-    if (!audioCtx) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (AudioContext) audioCtx = new AudioContext();
-    }
-    document.removeEventListener('click', initAudio);
+  const unlockAudio = (e) => {
+    if (e && e.isTrusted === false) return;
+    userHasInteracted = true;
+    try {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+    } catch (err) {}
+    document.removeEventListener('click', unlockAudio);
+    document.removeEventListener('touchstart', unlockAudio);
+    document.removeEventListener('keydown', unlockAudio);
   };
-  document.addEventListener('click', initAudio, { once: true });
+
+  document.addEventListener('click', unlockAudio, { passive: true });
+  document.addEventListener('touchstart', unlockAudio, { passive: true });
+  document.addEventListener('keydown', unlockAudio, { passive: true });
+}
+
+function ensureAudioReady() {
+  if (!userHasInteracted || !audioCtx) return false;
+  return audioCtx.state === 'running';
 }
 
 function playAudioSuccess() {
+  if (!ensureAudioReady()) return;
   try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
@@ -1335,10 +1480,8 @@ function playAudioSuccess() {
 }
 
 function playAudioWarning() {
+  if (!ensureAudioReady()) return;
   try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
@@ -1358,10 +1501,8 @@ function playAudioWarning() {
 }
 
 function playAudioScan() {
+  if (!ensureAudioReady()) return;
   try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
@@ -1381,7 +1522,7 @@ function playAudioScan() {
 }
 
 // ----------------------------------------------------
-// 8. Notifications & Modals
+// 8. Notifications & Utilities
 // ----------------------------------------------------
 function showNotificationToast(title, desc) {
   const toast = document.createElement('div');
@@ -1412,7 +1553,7 @@ function setupSmoothScrolling() {
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function(e) {
       const targetId = this.getAttribute('href');
-      if (targetId === '#') return;
+      if (targetId === '#' || targetId === '') return;
       const targetEl = document.querySelector(targetId);
       if (targetEl) {
         e.preventDefault();
