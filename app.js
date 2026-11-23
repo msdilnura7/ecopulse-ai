@@ -100,6 +100,7 @@ const StorageService = {
 // Safe Application Initialization Guard
 // ----------------------------------------------------
 function initApp() {
+  initNavDropdown();
   initLanguageSwitcher();
   initRealImpactTracker();
   initCalculator();
@@ -121,8 +122,56 @@ if (document.readyState === 'loading') {
 }
 
 // ----------------------------------------------------
-// 0. Multi-Language Switcher (i18n)
+// 0. Compact Collapsible Navbar & Language Dropdown Menu
 // ----------------------------------------------------
+function initNavDropdown() {
+  const menuBtn = document.getElementById('nav-menu-btn');
+  const dropdown = document.getElementById('nav-dropdown-menu');
+  if (!menuBtn || !dropdown) return;
+
+  function toggleDropdown(e) {
+    if (e) e.stopPropagation();
+    const isHidden = dropdown.classList.contains('hidden');
+    if (isHidden) {
+      dropdown.classList.remove('hidden');
+      menuBtn.setAttribute('aria-expanded', 'true');
+    } else {
+      dropdown.classList.add('hidden');
+      menuBtn.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  window.closeNavDropdown = function() {
+    if (dropdown && !dropdown.classList.contains('hidden')) {
+      dropdown.classList.add('hidden');
+      if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+    }
+  };
+
+  menuBtn.addEventListener('click', toggleDropdown);
+
+  // Close when clicking any nav link inside dropdown
+  dropdown.querySelectorAll('.nav-dropdown-link').forEach(link => {
+    link.addEventListener('click', () => {
+      window.closeNavDropdown();
+    });
+  });
+
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target) && !menuBtn.contains(e.target)) {
+      window.closeNavDropdown();
+    }
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      window.closeNavDropdown();
+    }
+  });
+}
+
 function initLanguageSwitcher() {
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -130,6 +179,11 @@ function initLanguageSwitcher() {
       const selectedLang = btn.dataset.lang;
       if (selectedLang && ['en', 'uz', 'ru'].includes(selectedLang)) {
         setLanguage(selectedLang);
+        setTimeout(() => {
+          if (typeof window.closeNavDropdown === 'function') {
+            window.closeNavDropdown();
+          }
+        }, 150);
       }
     });
   });
@@ -145,18 +199,24 @@ function setLanguage(lang) {
   } catch (e) {}
   document.documentElement.lang = lang;
 
+  // Update Compact Nav Pill active language label
+  const navActiveLang = document.getElementById('nav-active-lang');
+  if (navActiveLang) {
+    navActiveLang.innerText = lang.toUpperCase();
+  }
+
   // Update Language Buttons UI state across both desktop & mobile navbars
   document.querySelectorAll('.lang-btn').forEach(btn => {
     const isTargetLang = btn.dataset.lang === lang;
-    const isDarkContainer = !!btn.closest('.bg-slate-800');
+    const isDarkContainer = !!btn.closest('.bg-slate-800') || !!btn.closest('.bg-slate-850');
 
     if (isTargetLang) {
-      btn.className = 'lang-btn px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition active:scale-95 bg-emerald-600 text-white shadow-sm';
+      btn.className = 'lang-btn px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-bold transition active:scale-95 bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-400/40';
     } else {
       if (isDarkContainer) {
-        btn.className = 'lang-btn px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition active:scale-95 text-slate-300 hover:text-white bg-transparent';
+        btn.className = 'lang-btn px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-bold transition active:scale-95 text-slate-300 hover:text-white bg-transparent';
       } else {
-        btn.className = 'lang-btn px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition active:scale-95 text-slate-600 hover:text-slate-900 bg-transparent';
+        btn.className = 'lang-btn px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-bold transition active:scale-95 text-slate-600 hover:text-slate-900 bg-transparent';
       }
     }
   });
@@ -435,6 +495,56 @@ function initCalculator() {
     if (waterVal) waterVal.innerText = `${waterCount} ${waterUnit}`;
     if (coffeeVal) coffeeVal.innerText = `${coffeeCount} ${coffeeUnit}`;
 
+    // Dynamic Behavioral Economics "Nudge" Student Equivalent Callout
+    const nudgeEl = document.getElementById('calc-nudge-equivalent');
+    if (nudgeEl) {
+      const basisUZS = netSavingsUZS > 0 ? netSavingsUZS : totalSpendUZS;
+      if (basisUZS > 0) {
+        const coffees = Math.max(1, Math.round(basisUZS / 15000));
+        const dataMonths = Math.max(0.5, (basisUZS / 80000)).toFixed(1);
+        
+        if (currentLang === 'uz') {
+          nudgeEl.innerHTML = `
+            <div class="flex items-start sm:items-center space-x-2.5">
+              <span class="text-base shrink-0">💡</span>
+              <div class="text-xs text-emerald-950 leading-relaxed">
+                <span class="font-bold text-emerald-800 uppercase tracking-wider text-[10px] mr-1">Nudge iqtisodiyoti:</span>
+                Ushbu tejamkorlik <strong class="text-slate-900 font-mono font-bold bg-white/75 px-1.5 py-0.5 rounded border border-emerald-300">~${coffees.toLocaleString()} ta kampus kofesi ☕</strong> yoki <strong class="text-slate-900 font-mono font-bold bg-white/75 px-1.5 py-0.5 rounded border border-emerald-300">~${dataMonths} oylik talaba mobil interneti 📱</strong> to'loviga teng!
+              </div>
+            </div>
+          `;
+        } else if (currentLang === 'ru') {
+          nudgeEl.innerHTML = `
+            <div class="flex items-start sm:items-center space-x-2.5">
+              <span class="text-base shrink-0">💡</span>
+              <div class="text-xs text-emerald-950 leading-relaxed">
+                <span class="font-bold text-emerald-800 uppercase tracking-wider text-[10px] mr-1">Nudge-эквивалент:</span>
+                Эта сумма равна <strong class="text-slate-900 font-mono font-bold bg-white/75 px-1.5 py-0.5 rounded border border-emerald-300">~${coffees.toLocaleString()} чашкам кофе в кампусе ☕</strong> или <strong class="text-slate-900 font-mono font-bold bg-white/75 px-1.5 py-0.5 rounded border border-emerald-300">~${dataMonths} мес. мобильного интернета 📱</strong>!
+              </div>
+            </div>
+          `;
+        } else {
+          nudgeEl.innerHTML = `
+            <div class="flex items-start sm:items-center space-x-2.5">
+              <span class="text-base shrink-0">💡</span>
+              <div class="text-xs text-emerald-950 leading-relaxed">
+                <span class="font-bold text-emerald-800 uppercase tracking-wider text-[10px] mr-1">Student Opportunity Value:</span>
+                This savings equals <strong class="text-slate-900 font-mono font-bold bg-white/75 px-1.5 py-0.5 rounded border border-emerald-300">~${coffees.toLocaleString()} campus coffees ☕</strong> or <strong class="text-slate-900 font-mono font-bold bg-white/75 px-1.5 py-0.5 rounded border border-emerald-300">~${dataMonths} months of mobile data 📱</strong>!
+              </div>
+            </div>
+          `;
+        }
+      } else {
+        if (currentLang === 'uz') {
+          nudgeEl.innerHTML = `<div class="text-xs text-slate-500 flex items-center space-x-2"><span>💡</span><span>Talaba uchun tejamkorlik ekvivalentini ko'rish uchun yuqoridagi slayderlarni suring.</span></div>`;
+        } else if (currentLang === 'ru') {
+          nudgeEl.innerHTML = `<div class="text-xs text-slate-500 flex items-center space-x-2"><span>💡</span><span>Передвиньте ползунки выше, чтобы рассчитать студенческий эквивалент экономии.</span></div>`;
+        } else {
+          nudgeEl.innerHTML = `<div class="text-xs text-slate-500 flex items-center space-x-2"><span>💡</span><span>Adjust consumption sliders above to calculate your student opportunity savings.</span></div>`;
+        }
+      }
+    }
+
     updateChartData(dailyTotalSpend, dailyItems);
   };
 
@@ -505,16 +615,18 @@ function initChart() {
           labels: {
             boxWidth: 14,
             usePointStyle: true,
-            font: { family: 'Inter', size: 12, weight: 600 },
+            font: { family: 'Plus Jakarta Sans', size: 12, weight: 600 },
             color: '#334155'
           }
         },
         tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.95)',
-          titleFont: { family: 'Inter', size: 13, weight: 700 },
-          bodyFont: { family: 'Inter', size: 12 },
+          backgroundColor: 'rgba(11, 17, 32, 0.96)',
+          titleFont: { family: 'Plus Jakarta Sans', size: 13, weight: 700 },
+          bodyFont: { family: 'JetBrains Mono', size: 12 },
           padding: 12,
-          cornerRadius: 8,
+          cornerRadius: 10,
+          borderColor: 'rgba(16, 185, 129, 0.3)',
+          borderWidth: 1,
           callbacks: {
             label: function(context) {
               const val = context.parsed.y;
@@ -532,12 +644,12 @@ function initChart() {
       scales: {
         x: {
           grid: { color: 'rgba(226, 232, 240, 0.6)' },
-          ticks: { font: { family: 'Inter', size: 11 }, color: '#64748B' }
+          ticks: { font: { family: 'Plus Jakarta Sans', size: 11 }, color: '#64748B' }
         },
         y: {
           grid: { color: 'rgba(226, 232, 240, 0.6)' },
           ticks: {
-            font: { family: 'Inter', size: 11 },
+            font: { family: 'JetBrains Mono', size: 11 },
             color: '#64748B',
             callback: function(value) {
               const tr = (typeof translations !== 'undefined' && translations[currentLang]) ? translations[currentLang] : (translations?.en || {});
@@ -650,7 +762,7 @@ const presetTranslations = {
       full_verdict: '✅ Verified Reusable Container (98.4% confidence) — +15 EcoPoints & 4,000 UZS saved added to your profile!',
       verdict_title: 'Verified Reusable Container',
       verdict_msg: '+15 EcoPoints & 4,000 UZS saved added to your profile!',
-      recommendation: 'Campus hydro-station unlocked: Free cold/sparkling filtered water refill authorized.'
+      recommendation: 'TSUE campus hydro-station unlocked: Free cold/sparkling filtered water refill authorized.'
     },
     uz: {
       name: 'Zanglamaydigan po\'latdan izolyatsiyalangan termos (500ml)',
@@ -658,7 +770,7 @@ const presetTranslations = {
       full_verdict: '✅ Tasdiqlangan ko\'p martalik idish (98.4% aniqlik) — Profilingizga +15 EcoPoint va 4 000 so\'m tejamkorlik qo\'shildi!',
       verdict_title: 'Tasdiqlangan ko\'p martalik idish',
       verdict_msg: 'Profilingizga +15 EcoPoint va 4 000 so\'m tejamkorlik qo\'shildi!',
-      recommendation: 'Kampus gidro-stansiyasi ochildi: Bepul toza filtrlangan suv olishga ruxsat berildi.'
+      recommendation: 'TDIU kampus gidro-stansiyasi ochildi: Bepul toza filtrlangan suv olishga ruxsat berildi.'
     },
     ru: {
       name: 'Вакуумный термос из нержавеющей стали (500мл)',
@@ -666,7 +778,7 @@ const presetTranslations = {
       full_verdict: '✅ Подтверждена многоразовая ёмкость (точность 98.4%) — В профиль начислено +15 EcoPoints и сэкономлено 4 000 сум!',
       verdict_title: 'Подтверждена многоразовая ёмкость',
       verdict_msg: 'В профиль начислено +15 EcoPoints и сэкономлено 4 000 сум!',
-      recommendation: 'Доступ к гидростанции открыт: Авторизован бесплатный набор чистой фильтрованной воды.'
+      recommendation: 'Доступ к гидростанции ТГЭУ открыт: Авторизован бесплатный набор чистой фильтрованной воды.'
     }
   },
   glass: {
@@ -683,7 +795,7 @@ const presetTranslations = {
       full_verdict: '✅ Verified Reusable Container (98.4% confidence) — +15 EcoPoints & 4,000 UZS saved added to your profile!',
       verdict_title: 'Verified Reusable Container',
       verdict_msg: '+15 EcoPoints & 4,000 UZS saved added to your profile!',
-      recommendation: 'Perfect for campus herbal tea & chilled mountain water refills.'
+      recommendation: 'Perfect for TSUE campus herbal tea & chilled mountain water refills.'
     },
     uz: {
       name: 'Silikon g\'ilofli borosilikat shisha eko-idish',
@@ -691,7 +803,7 @@ const presetTranslations = {
       full_verdict: '✅ Tasdiqlangan ko\'p martalik idish (98.4% aniqlik) — Profilingizga +15 EcoPoint va 4 000 so\'m tejamkorlik qo\'shildi!',
       verdict_title: 'Tasdiqlangan ko\'p martalik idish',
       verdict_msg: 'Profilingizga +15 EcoPoint va 4 000 so\'m tejamkorlik qo\'shildi!',
-      recommendation: 'Kampus fitobari choyi va muzdek tog\' suvi bilan to\'ldirish uchun ayni muddao.'
+      recommendation: 'TDIU fitobari choyi va muzdek tog\' suvi bilan to\'ldirish uchun ayni muddao.'
     },
     ru: {
       name: 'Эко-бутылка из боросиликатного стекла с силиконовым чехлом',
@@ -699,7 +811,7 @@ const presetTranslations = {
       full_verdict: '✅ Подтверждена многоразовая ёмкость (точность 98.4%) — В профиль начислено +15 EcoPoints и сэкономлено 4 000 сум!',
       verdict_title: 'Подтверждена многоразовая ёмкость',
       verdict_msg: 'В профиль начислено +15 EcoPoints и сэкономлено 4 000 сум!',
-      recommendation: 'Идеально подходит для травяного чая и набора прохладной горной воды.'
+      recommendation: 'Идеально подходит для травяного чая и набора прохладной воды в ТГЭУ.'
     }
   },
   plastic: {
@@ -716,7 +828,7 @@ const presetTranslations = {
       full_verdict: '⚠️ Single-Use PET Plastic Detected (96.1% confidence) — Tip: Switch to a refillable bottle to save ~120,000 UZS/month.',
       verdict_title: 'Single-Use PET Plastic Detected',
       verdict_msg: 'Tip: Switch to a refillable bottle to save ~120,000 UZS/month.',
-      recommendation: 'Eligible for 20% campus bookstore discount on EcoPulse reusable flasks.'
+      recommendation: 'Eligible for 20% TSUE bookstore discount on EcoPulse reusable flasks.'
     },
     uz: {
       name: 'Bir martalik PET plastik suv idishi (Hydrolife/Nestle 0.5L)',
@@ -724,7 +836,7 @@ const presetTranslations = {
       full_verdict: '⚠️ Bir martalik PET plastik aniqlandi (96.1% aniqlik) — Maslahat: Oyiga ~120 000 so\'m tejash uchun ko\'p martalik termosga o\'ting.',
       verdict_title: 'Bir martalik PET plastik aniqlandi',
       verdict_msg: 'Maslahat: Oyiga ~120 000 so\'m tejash uchun ko\'p martalik termosga o\'ting.',
-      recommendation: 'EcoPulse ko\'p martalik termoslariga kampus do\'konida 20% chegirma olishingiz mumkin.'
+      recommendation: 'EcoPulse ko\'p martalik termoslariga TDIU do\'konida 20% chegirma olishingiz mumkin.'
     },
     ru: {
       name: 'Одноразовая пластиковая бутылка PET (Hydrolife/Nestle 0.5л)',
@@ -732,7 +844,7 @@ const presetTranslations = {
       full_verdict: '⚠️ Обнаружен одноразовый PET-пластик (точность 96.1%) — Совет: Перейдите на многоразовую бутылку, чтобы экономить ~120 000 сум/мес.',
       verdict_title: 'Обнаружен одноразовый PET-пластик',
       verdict_msg: 'Совет: Перейдите на многоразовую бутылку, чтобы экономить ~120 000 сум/мес.',
-      recommendation: 'Доступна скидка 20% на фирменные термосы EcoPulse в книжном магазине кампуса.'
+      recommendation: 'Доступна скидка 20% на фирменные термосы EcoPulse в книжном магазине ТГЭУ.'
     }
   },
   custom: {
@@ -749,7 +861,7 @@ const presetTranslations = {
       full_verdict: '✅ Verified Reusable Container (99.2% confidence) — +15 EcoPoints & 4,000 UZS saved added to your profile!',
       verdict_title: 'Verified Reusable Container',
       verdict_msg: '+15 EcoPoints & 4,000 UZS saved added to your profile!',
-      recommendation: 'Campus hydro-station unlocked: Free cold/sparkling filtered water refill authorized.'
+      recommendation: 'TSUE campus hydro-station unlocked: Free cold/sparkling filtered water refill authorized.'
     },
     uz: {
       name: 'Foydalanuvchi yuklagan maxsus termos / shisha',
@@ -757,7 +869,7 @@ const presetTranslations = {
       full_verdict: '✅ Tasdiqlangan ko\'p martalik idish (99.2% aniqlik) — Profilingizga +15 EcoPoint va 4 000 so\'m tejamkorlik qo\'shildi!',
       verdict_title: 'Tasdiqlangan ko\'p martalik idish',
       verdict_msg: 'Profilingizga +15 EcoPoint va 4 000 so\'m tejamkorlik qo\'shildi!',
-      recommendation: 'Kampus gidro-stansiyasi ochildi: Bepul toza filtrlangan suv olishga ruxsat berildi.'
+      recommendation: 'TDIU kampus gidro-stansiyasi ochildi: Bepul toza filtrlangan suv olishga ruxsat berildi.'
     },
     ru: {
       name: 'Загруженная пользователем ёмкость',
@@ -765,7 +877,7 @@ const presetTranslations = {
       full_verdict: '✅ Подтверждена многоразовая ёмкость (точность 99.2%) — В профиль начислено +15 EcoPoints и сэкономлено 4 000 сум!',
       verdict_title: 'Подтверждена многоразовая ёмкость',
       verdict_msg: 'В профиль начислено +15 EcoPoints и сэкономлено 4 000 сум!',
-      recommendation: 'Доступ к гидростанции открыт: Авторизован бесплатный набор чистой фильтрованной воды.'
+      recommendation: 'Доступ к гидростанции ТГЭУ открыт: Авторизован бесплатный набор чистой фильтрованной воды.'
     }
   }
 };
